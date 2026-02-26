@@ -25,7 +25,7 @@ interface ProductState {
   editCategory: (categoryId: string, newCategoryName: string) => void;
   deleteCategory: (categoryId: string) => void;
   addSupplier: (supplier: Supplier) => void;
-  editSupplier: (oldName: string, newName: string) => void;
+  editSupplier: (updatedSupplier: Supplier) => void;
   deleteSupplier: (name: string) => void;
 }
 
@@ -221,12 +221,10 @@ export const useProductStore = create<ProductState>((set) => ({
     })),
 
   // Edit an existing supplier
-  editSupplier: (supplierId: string, newSupplierName: string) =>
+  editSupplier: (updatedSupplier: Supplier) =>
     set((state) => ({
       suppliers: state.suppliers.map((supplier) =>
-        supplier.id === supplierId
-          ? { ...supplier, name: newSupplierName }
-          : supplier
+        supplier.id === updatedSupplier.id ? updatedSupplier : supplier
       ),
     })),
 

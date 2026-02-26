@@ -30,9 +30,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const userId = session.id;
-  const { customerName, items } = req.body as {
+  const { customerName, items, taxRate, amountPaid, paymentMethod, keterangan } = req.body as {
     customerName?: string;
     items?: Array<{ productId: string; quantity: number }>;
+    taxRate?: number;
+    amountPaid?: number;
+    paymentMethod?: string;
+    keterangan?: string;
   };
 
   if (!Array.isArray(items) || items.length === 0) {
@@ -120,8 +124,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     );
 
     const totalAmount = preparedItems.reduce((sum, item) => sum + item.lineTotal, 0);
+    const parsedTaxRate = Number.isFinite(Number(taxRate)) ? Math.max(Number(taxRate), 0) : 0;
+    const taxAmount = totalAmount * (parsedTaxRate / 100);
+    const grandTotal = totalAmount + taxAmount;
+    const parsedAmountPaid = Number.isFinite(Number(amountPaid)) ? Math.max(Number(amountPaid), 0) : 0;
+    const changeAmount = parsedAmountPaid - grandTotal;
+
+    if (parsedAmountPaid < grandTotal) {
+      return res.status(400).json({ error: "Amount paid must be greater than or equal to grand total" });
+    }
+
     const invoiceNumber = createInvoiceNumber();
 
+    
     const mongoUri = process.env.DATABASE_URL;
     if (!mongoUri) {
       return res.status(500).json({ error: "DATABASE_URL is not configured" });
@@ -138,6 +153,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         userId,
         customerName: customerName?.trim() || "Walk-in Customer",
         items: preparedItems.map(({ remainingQuantity, ...invoiceItem }) => invoiceItem),
+        taxRate: parsedTaxRate,
+        taxAmount,
+        grandTotal,
+        amountPaid: parsedAmountPaid,
+        changeAmount,
+        paymentMethod: paymentMethod?.trim() || "Cash",
+        keterangan: keterangan?.trim() || "",
         totalAmount,
         createdAt: new Date(),
       };

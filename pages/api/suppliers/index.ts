@@ -19,10 +19,19 @@ export default async function handler(
   switch (method) {
     case "POST":
       try {
-        const { name } = req.body;
+        const { name, contactName, phone, email, address } = req.body;
+
+        if (!name?.trim()) {
+          return res.status(400).json({ error: "Name is required" });
+        }
+
         const supplier = await prisma.supplier.create({
           data: {
-            name,
+            name: name.trim(),
+            contactName: contactName?.trim() || null,
+            phone: phone?.trim() || null,
+            email: email?.trim() || null,
+            address: address?.trim() || null,
             userId,
           },
         });
@@ -36,6 +45,7 @@ export default async function handler(
       try {
         const suppliers = await prisma.supplier.findMany({
           where: { userId },
+          orderBy: { name: "asc" },
         });
         res.status(200).json(suppliers);
       } catch (error) {
@@ -45,15 +55,29 @@ export default async function handler(
       break;
     case "PUT":
       try {
-        const { id, name } = req.body;
+        const { id, name, contactName, phone, email, address } = req.body;
 
-        if (!id || !name) {
+        if (!id || !name?.trim()) {
           return res.status(400).json({ error: "ID and name are required" });
+        }
+
+        const existingSupplier = await prisma.supplier.findFirst({
+          where: { id, userId },
+        });
+
+        if (!existingSupplier) {
+          return res.status(404).json({ error: "Supplier not found" });
         }
 
         const updatedSupplier = await prisma.supplier.update({
           where: { id },
-          data: { name },
+          data: {
+            name: name.trim(),
+            contactName: contactName?.trim() || null,
+            phone: phone?.trim() || null,
+            email: email?.trim() || null,
+            address: address?.trim() || null,
+          },
         });
 
         res.status(200).json(updatedSupplier);
@@ -66,8 +90,8 @@ export default async function handler(
       try {
         const { id } = req.body;
 
-        const supplier = await prisma.supplier.findUnique({
-          where: { id },
+        const supplier = await prisma.supplier.findFirst({
+          where: { id, userId },
         });
 
         if (!supplier) {
