@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AiFillProduct } from "react-icons/ai";
 import { FiActivity, FiBarChart, FiFileText, FiHome } from "react-icons/fi"; // Import icons for new nav items
+import { HiOutlineReceiptTax } from "react-icons/hi";
 import { useAuth } from "../authContext";
 import { ModeToggle } from "./ModeToggle";
 
@@ -79,6 +80,15 @@ export default function AppHeader() {
         >
           <FiBarChart className="mr-2 h-4 w-4" />
           Business Insights
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => handleNavigation("/invoices")}
+          className="text-primary-foreground hover:bg-primary-dark"
+        >
+          <HiOutlineReceiptTax className="mr-2 h-4 w-4" />
+          Invoices
         </Button>
         <Button
           variant="ghost"
