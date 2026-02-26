@@ -125,30 +125,26 @@ export default async function handler(
 
         const transformedProducts = await Promise.all(
           products.map(async (product: any) => {
-            try {
-              const categoryName = await findCategoryNameById(product?.categoryId);
-              const supplierName = await findSupplierNameById(product?.supplierId);
+            const categoryName = await findCategoryNameById(product.categoryId);
+            const supplierName = await findSupplierNameById(product.supplierId);
 
-              return {
-                id: product?._id?.toString?.() || "",
-                name: product?.name || "",
-                sku: product?.sku || "",
-                quantity: toNumber(product?.quantity, 0),
-                status: product?.status || "Stock Out",
-                userId: product?.userId || userId,
-                categoryId: product?.categoryId || "",
-                supplierId: product?.supplierId || "",
-                createdAt: toIsoDate(product?.createdAt),
-                unit: product?.unit || "pcs",
-                buyPrice: toNumber(product?.buyPrice, toNumber(product?.price, 0)),
-                sellPrice: toNumber(product?.sellPrice, toNumber(product?.price, 0)),
-                price: toNumber(product?.sellPrice, toNumber(product?.price, 0)),
-                category: categoryName,
-                supplier: supplierName,
-              };
-            } catch {
-              return null;
-            }
+            return {
+              id: product._id.toString(),
+              name: product.name,
+              sku: product.sku,
+              quantity: toNumber(product.quantity, 0),
+              status: product.status,
+              userId: product.userId,
+              categoryId: product.categoryId,
+              supplierId: product.supplierId,
+              createdAt: toIsoDate(product.createdAt),
+              unit: product.unit || "pcs",
+              buyPrice: toNumber(product.buyPrice, toNumber(product.price, 0)),
+              sellPrice: toNumber(product.sellPrice, toNumber(product.price, 0)),
+              price: toNumber(product.sellPrice, toNumber(product.price, 0)),
+              category: categoryName,
+              supplier: supplierName,
+            };
           })
         );
 
