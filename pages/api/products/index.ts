@@ -22,6 +22,31 @@ const toNumber = (value: unknown, fallback = 0) => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
+const toIsoDate = (value: unknown) => {
+  const date = value ? new Date(value as string | number | Date) : new Date();
+  return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
+};
+
+const findCategoryNameById = async (categoryId?: string) => {
+  if (!categoryId) return "Tidak Diketahui";
+  try {
+    const category = await prisma.category.findUnique({ where: { id: categoryId } });
+    return category?.name || "Tidak Diketahui";
+  } catch {
+    return "Tidak Diketahui";
+  }
+};
+
+const findSupplierNameById = async (supplierId?: string) => {
+  if (!supplierId) return "Tidak Diketahui";
+  try {
+    const supplier = await prisma.supplier.findUnique({ where: { id: supplierId } });
+    return supplier?.name || "Tidak Diketahui";
+  } catch {
+    return "Tidak Diketahui";
+  }
+};
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -78,15 +103,15 @@ export default async function handler(
 
         const inserted = await collection.insertOne(productDoc);
 
-        const category = await prisma.category.findUnique({ where: { id: categoryId } });
-        const supplier = await prisma.supplier.findUnique({ where: { id: supplierId } });
+        const categoryName = await findCategoryNameById(categoryId);
+        const supplierName = await findSupplierNameById(supplierId);
 
         res.status(201).json({
           id: inserted.insertedId.toString(),
           ...productDoc,
           createdAt: createdAt.toISOString(),
-          category: category?.name || "Unknown",
-          supplier: supplier?.name || "Unknown",
+          category: categoryName,
+          supplier: supplierName,
         });
       } catch (error) {
         res.status(500).json({ error: "Failed to create product" });
@@ -100,34 +125,37 @@ export default async function handler(
 
         const transformedProducts = await Promise.all(
           products.map(async (product: any) => {
-            const category = await prisma.category.findUnique({
-              where: { id: product.categoryId },
-            });
-            const supplier = await prisma.supplier.findUnique({
-              where: { id: product.supplierId },
-            });
+            try {
+              const categoryName = await findCategoryNameById(product?.categoryId);
+              const supplierName = await findSupplierNameById(product?.supplierId);
 
-            return {
-              id: product._id.toString(),
-              name: product.name,
-              sku: product.sku,
-              quantity: toNumber(product.quantity, 0),
-              status: product.status,
-              userId: product.userId,
-              categoryId: product.categoryId,
-              supplierId: product.supplierId,
-              createdAt: new Date(product.createdAt).toISOString(),
-              unit: product.unit || "pcs",
-              buyPrice: toNumber(product.buyPrice, toNumber(product.price, 0)),
-              sellPrice: toNumber(product.sellPrice, toNumber(product.price, 0)),
-              price: toNumber(product.sellPrice, toNumber(product.price, 0)),
-              category: category?.name || "Tidak Diketahui",
-              supplier: supplier?.name || "Tidak Diketahui",
-            };
+              return {
+                id: product?._id?.toString?.() || "",
+                name: product?.name || "",
+                sku: product?.sku || "",
+                quantity: toNumber(product?.quantity, 0),
+                status: product?.status || "Stock Out",
+                userId: product?.userId || userId,
+                categoryId: product?.categoryId || "",
+                supplierId: product?.supplierId || "",
+                createdAt: toIsoDate(product?.createdAt),
+                unit: product?.unit || "pcs",
+                buyPrice: toNumber(product?.buyPrice, toNumber(product?.price, 0)),
+                sellPrice: toNumber(product?.sellPrice, toNumber(product?.price, 0)),
+                price: toNumber(product?.sellPrice, toNumber(product?.price, 0)),
+                category: categoryName,
+                supplier: supplierName,
+              };
+            } catch {
+              return null;
+            }
           })
         );
 
-        res.status(200).json(transformedProducts);
+        const safeProducts = transformedProducts.filter((product): product is NonNullable<typeof product> => Boolean(product));
+
+        res.status(200).json(safeProducts);
+
       } catch (error) {
         res.status(500).json({ error: "Failed to fetch products" });
       }
@@ -172,8 +200,8 @@ export default async function handler(
         );
 
         const updatedProduct = await collection.findOne({ _id: new ObjectId(id) });
-        const category = await prisma.category.findUnique({ where: { id: categoryId } });
-        const supplier = await prisma.supplier.findUnique({ where: { id: supplierId } });
+        const categoryName = await findCategoryNameById(categoryId);
+        const supplierName = await findSupplierNameById(supplierId);
 
         if (!updatedProduct) {
           return res.status(404).json({ error: "Product not found" });
@@ -188,13 +216,13 @@ export default async function handler(
           userId: updatedProduct.userId,
           categoryId: updatedProduct.categoryId,
           supplierId: updatedProduct.supplierId,
-          createdAt: new Date(updatedProduct.createdAt).toISOString(),
+          createdAt: toIsoDate(updatedProduct.createdAt),
           unit: updatedProduct.unit || "pcs",
           buyPrice: toNumber(updatedProduct.buyPrice, toNumber(updatedProduct.price, 0)),
           sellPrice: toNumber(updatedProduct.sellPrice, toNumber(updatedProduct.price, 0)),
           price: toNumber(updatedProduct.sellPrice, toNumber(updatedProduct.price, 0)),
-          category: category?.name || "Tidak Diketahui",
-          supplier: supplier?.name || "Tidak Diketahui",
+          category: categoryName,
+          supplier: supplierName,
         });
       } catch (error) {
         res.status(500).json({ error: "Failed to update product" });
