@@ -1,9 +1,26 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { PrismaClient } from "@prisma/client";
 import { getSessionServer } from "@/utils/auth";
-import { MongoClient } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 
 const prisma = new PrismaClient();
+const mongoClient = new MongoClient(process.env.DATABASE_URL || "");
+
+const getProductsCollection = async () => {
+  if (!process.env.DATABASE_URL) {
+    throw new Error("DATABASE_URL is not configured");
+  }
+
+  await mongoClient.connect();
+  const db = mongoClient.db();
+  return db.collection("Product");
+};
+
+const toNumber = (value: unknown, fallback = 0) => {
+  if (typeof value === "number") return value;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
 
 export default async function handler(
   req: NextApiRequest,
@@ -20,53 +37,54 @@ export default async function handler(
   switch (method) {
     case "POST":
       try {
-        const { name, sku, price, quantity, status, categoryId, supplierId } =
-          req.body;
+        const {
+          name,
+          sku,
+          quantity,
+          status,
+          categoryId,
+          supplierId,
+          unit,
+          buyPrice,
+          sellPrice,
+          price,
+        } = req.body;
 
-        // Check if SKU already exists
-        const existingProduct = await prisma.product.findUnique({
-          where: { sku },
-        });
+        const collection = await getProductsCollection();
+        const existingProduct = await collection.findOne({ sku });
 
         if (existingProduct) {
           return res.status(400).json({ error: "SKU must be unique" });
         }
 
-        // Use Prisma for product creation to ensure consistency
-        const product = await prisma.product.create({
-          data: {
-            name,
-            sku,
-            price,
-            quantity: BigInt(quantity) as any,
-            status,
-            userId,
-            categoryId,
-            supplierId,
-            createdAt: new Date(),
-          },
-        });
-        
-        // Fetch category and supplier data for the response
-        const category = await prisma.category.findUnique({
-          where: { id: categoryId },
-        });
-        const supplier = await prisma.supplier.findUnique({
-          where: { id: supplierId },
-        });
-        
-        // Return the created product data with category and supplier names
+        const normalizedSellPrice = toNumber(sellPrice ?? price, 0);
+        const normalizedBuyPrice = toNumber(buyPrice ?? normalizedSellPrice, 0);
+        const createdAt = new Date();
+
+        const productDoc = {
+          name,
+          sku,
+          quantity: toNumber(quantity, 0),
+          status,
+          userId,
+          categoryId,
+          supplierId,
+          createdAt,
+          unit: unit || "pcs",
+          buyPrice: normalizedBuyPrice,
+          sellPrice: normalizedSellPrice,
+          price: normalizedSellPrice,
+        };
+
+        const inserted = await collection.insertOne(productDoc);
+
+        const category = await prisma.category.findUnique({ where: { id: categoryId } });
+        const supplier = await prisma.supplier.findUnique({ where: { id: supplierId } });
+
         res.status(201).json({
-          id: product.id,
-          name: product.name,
-          sku: product.sku,
-          price: product.price,
-          quantity: Number(product.quantity),
-          status: product.status,
-          userId: product.userId,
-          categoryId: product.categoryId,
-          supplierId: product.supplierId,
-          createdAt: product.createdAt.toISOString(),
+          id: inserted.insertedId.toString(),
+          ...productDoc,
+          createdAt: createdAt.toISOString(),
           category: category?.name || "Unknown",
           supplier: supplier?.name || "Unknown",
         });
@@ -77,18 +95,11 @@ export default async function handler(
 
     case "GET":
       try {
-        const products = await prisma.product.findMany({
-          where: { userId },
-        });
+        const collection = await getProductsCollection();
+        const products = await collection.find({ userId }).toArray();
 
-        // Debug log - only log in development
-        if (process.env.NODE_ENV === 'development') {
-          console.log("Raw products from database:", products);
-        }
-
-        // Fetch category and supplier data separately
         const transformedProducts = await Promise.all(
-          products.map(async (product) => {
+          products.map(async (product: any) => {
             const category = await prisma.category.findUnique({
               where: { id: product.categoryId },
             });
@@ -97,11 +108,21 @@ export default async function handler(
             });
 
             return {
-              ...product,
-              quantity: Number(product.quantity), // Convert BigInt to Number
-              createdAt: product.createdAt.toISOString(), // Convert `createdAt` to ISO string
-              category: category?.name || "Unknown", // Transform category to string
-              supplier: supplier?.name || "Unknown", // Transform supplier to string
+              id: product._id.toString(),
+              name: product.name,
+              sku: product.sku,
+              quantity: toNumber(product.quantity, 0),
+              status: product.status,
+              userId: product.userId,
+              categoryId: product.categoryId,
+              supplierId: product.supplierId,
+              createdAt: new Date(product.createdAt).toISOString(),
+              unit: product.unit || "pcs",
+              buyPrice: toNumber(product.buyPrice, toNumber(product.price, 0)),
+              sellPrice: toNumber(product.sellPrice, toNumber(product.price, 0)),
+              price: toNumber(product.sellPrice, toNumber(product.price, 0)),
+              category: category?.name || "Tidak Diketahui",
+              supplier: supplier?.name || "Tidak Diketahui",
             };
           })
         );
@@ -118,48 +139,62 @@ export default async function handler(
           id,
           name,
           sku,
-          price,
           quantity,
           status,
           categoryId,
           supplierId,
+          unit,
+          buyPrice,
+          sellPrice,
+          price,
         } = req.body;
 
-        const updatedProduct = await prisma.product.update({
-          where: { id },
-          data: {
-            name,
-            sku,
-            price,
-            quantity: BigInt(quantity) as any, // Convert to BigInt for database
-            status,
-            categoryId,
-            supplierId,
-          },
-        });
+        const collection = await getProductsCollection();
+        const normalizedSellPrice = toNumber(sellPrice ?? price, 0);
+        const normalizedBuyPrice = toNumber(buyPrice ?? normalizedSellPrice, 0);
 
-        // Fetch category and supplier data for the response
-        const category = await prisma.category.findUnique({
-          where: { id: categoryId },
-        });
-        const supplier = await prisma.supplier.findUnique({
-          where: { id: supplierId },
-        });
+        await collection.updateOne(
+          { _id: new ObjectId(id) },
+          {
+            $set: {
+              name,
+              sku,
+              quantity: toNumber(quantity, 0),
+              status,
+              categoryId,
+              supplierId,
+              unit: unit || "pcs",
+              buyPrice: normalizedBuyPrice,
+              sellPrice: normalizedSellPrice,
+              price: normalizedSellPrice,
+            },
+          }
+        );
 
-        // Return the updated product data with category and supplier names
+        const updatedProduct = await collection.findOne({ _id: new ObjectId(id) });
+        const category = await prisma.category.findUnique({ where: { id: categoryId } });
+        const supplier = await prisma.supplier.findUnique({ where: { id: supplierId } });
+
+        if (!updatedProduct) {
+          return res.status(404).json({ error: "Product not found" });
+        }
+
         res.status(200).json({
-          id: updatedProduct.id,
+          id: updatedProduct._id.toString(),
           name: updatedProduct.name,
           sku: updatedProduct.sku,
-          price: updatedProduct.price,
-          quantity: Number(updatedProduct.quantity), // Convert BigInt to Number
+          quantity: toNumber(updatedProduct.quantity, 0),
           status: updatedProduct.status,
           userId: updatedProduct.userId,
           categoryId: updatedProduct.categoryId,
           supplierId: updatedProduct.supplierId,
-          createdAt: updatedProduct.createdAt.toISOString(),
-          category: category?.name || "Unknown",
-          supplier: supplier?.name || "Unknown",
+          createdAt: new Date(updatedProduct.createdAt).toISOString(),
+          unit: updatedProduct.unit || "pcs",
+          buyPrice: toNumber(updatedProduct.buyPrice, toNumber(updatedProduct.price, 0)),
+          sellPrice: toNumber(updatedProduct.sellPrice, toNumber(updatedProduct.price, 0)),
+          price: toNumber(updatedProduct.sellPrice, toNumber(updatedProduct.price, 0)),
+          category: category?.name || "Tidak Diketahui",
+          supplier: supplier?.name || "Tidak Diketahui",
         });
       } catch (error) {
         res.status(500).json({ error: "Failed to update product" });
@@ -169,10 +204,8 @@ export default async function handler(
     case "DELETE":
       try {
         const { id } = req.body;
-
-        await prisma.product.delete({
-          where: { id },
-        });
+        const collection = await getProductsCollection();
+        await collection.deleteOne({ _id: new ObjectId(id) });
 
         res.status(204).end();
       } catch (error) {

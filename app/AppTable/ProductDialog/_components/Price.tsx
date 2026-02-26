@@ -6,19 +6,27 @@ import { MdError } from "react-icons/md";
 import { NumericFormat } from "react-number-format";
 import { useFormContext, Controller } from "react-hook-form";
 
-export default function Price() {
+interface PriceProps {
+  fieldName: "buyPrice" | "sellPrice";
+  label: string;
+  placeholder: string;
+}
+
+export default function Price({ fieldName, label, placeholder }: PriceProps) {
   const {
     control,
     formState: { errors },
   } = useFormContext();
 
+  const fieldError = errors[fieldName];
+
   return (
     <div className="flex flex-col gap-2 pt-[6px]">
-      <Label htmlFor="price" className="text-slate-600">
-        Price
+      <Label htmlFor={fieldName} className="text-slate-600">
+        {label}
       </Label>
       <Controller
-        name="price"
+        name={fieldName}
         control={control}
         defaultValue=""
         render={({ field: { onChange, value, ...field } }) => (
@@ -27,7 +35,8 @@ export default function Price() {
             value={value}
             customInput={Input}
             thousandSeparator
-            placeholder="Price..."
+            id={fieldName}
+            placeholder={placeholder}
             className="h-11"
             decimalScale={2}
             allowNegative={false}
@@ -41,10 +50,10 @@ export default function Price() {
         )}
       />
 
-      {errors.price && (
+      {fieldError && (
         <div className="text-red-500 flex gap-1 items-center text-[13px]">
           <MdError />
-          <p>{String(errors.price.message)}</p>
+          <p>{String(fieldError.message)}</p>
         </div>
       )}
     </div>

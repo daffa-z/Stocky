@@ -63,9 +63,9 @@ const AppTable = React.memo(() => {
       {/* Centered Header */}
       <CardHeader className="flex flex-col justify-center items-center space-y-2 sm:space-y-0 sm:flex-row sm:justify-between sm:space-x-4">
         <div className="flex flex-col items-center sm:items-start">
-          <CardTitle className="font-bold text-[23px]">Products</CardTitle>
+          <CardTitle className="font-bold text-[23px]">Produk</CardTitle>
           <p className="text-sm text-slate-600">
-            {productCount} products
+            {productCount} produk
           </p>
         </div>
       </CardHeader>

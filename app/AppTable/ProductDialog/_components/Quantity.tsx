@@ -11,7 +11,7 @@ export default function Quantity() {
   return (
     <div className=" flex flex-col gap-2 pt-[6px]">
       <Label htmlFor="quantity" className="text-slate-600">
-        {`Quantity`}
+        {`Stok`}
       </Label>
       <Input
         {...register("quantity", { valueAsNumber: true })}

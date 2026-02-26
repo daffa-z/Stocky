@@ -3,6 +3,9 @@ export interface Product {
   name: string;
   sku: string;
   price: number;
+  buyPrice?: number;
+  sellPrice?: number;
+  unit?: string;
   quantity: number;
   status?: string;
   createdAt: Date;

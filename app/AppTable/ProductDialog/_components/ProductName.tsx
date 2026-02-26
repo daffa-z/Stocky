@@ -12,7 +12,7 @@ export default function ProductName() {
   return (
     <div className="mt-5 flex flex-col gap-2">
       <Label htmlFor="product-name" className="text-slate-600">
-        {`Product's Name`}
+        {`Nama Barang`}
       </Label>
       <div className="flex gap-2 items-center">
         <Input
@@ -27,7 +27,7 @@ export default function ProductName() {
       {errors.productName && (
         <div className="text-red-500 flex gap-1 items-center text-[13px]">
           <MdError />
-          <p>The product name is required</p>
+          <p>Nama barang wajib diisi</p>
         </div>
       )}
     </div>
