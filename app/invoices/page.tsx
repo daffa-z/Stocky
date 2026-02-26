@@ -21,6 +21,13 @@ interface CreatedInvoice {
   invoiceNumber: string;
   customerName: string;
   totalAmount: number;
+  taxRate: number;
+  taxAmount: number;
+  grandTotal: number;
+  amountPaid: number;
+  changeAmount: number;
+  paymentMethod: string;
+  keterangan: string;
   createdAt: string;
   items: Array<{
     productId: string;
@@ -33,14 +40,21 @@ interface CreatedInvoice {
   }>;
 }
 
+const PAYMENT_METHODS = ["Cash", "Debit Card", "Credit Card", "Bank Transfer", "E-Wallet"] as const;
+
 export default function InvoicesPage() {
   const { allProducts, loadProducts } = useProductStore();
   const { toast } = useToast();
 
   const [customerName, setCustomerName] = useState("");
   const [items, setItems] = useState<InvoiceItemForm[]>([{ productId: "", quantity: 1 }]);
+  const [taxRate, setTaxRate] = useState(11);
+  const [amountPaid, setAmountPaid] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState<(typeof PAYMENT_METHODS)[number]>("Cash");
+  const [keterangan, setKeterangan] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdInvoice, setCreatedInvoice] = useState<CreatedInvoice | null>(null);
+  const [isFinished, setIsFinished] = useState(false);
 
   useEffect(() => {
     loadProducts();
@@ -66,11 +80,24 @@ export default function InvoicesPage() {
     }, 0);
   }, [items, allProducts]);
 
+  const estimatedTaxAmount = useMemo(() => estimatedTotal * (taxRate / 100), [estimatedTotal, taxRate]);
+  const estimatedGrandTotal = useMemo(() => estimatedTotal + estimatedTaxAmount, [estimatedTaxAmount, estimatedTotal]);
+  const estimatedChange = useMemo(() => Math.max(amountPaid - estimatedGrandTotal, 0), [amountPaid, estimatedGrandTotal]);
+
   const createInvoice = async () => {
     const filteredItems = items.filter((item) => item.productId && item.quantity > 0);
 
     if (filteredItems.length === 0) {
       toast({ title: "No invoice items", description: "Add at least one valid product line.", variant: "destructive" });
+      return;
+    }
+
+    if (amountPaid < estimatedGrandTotal) {
+      toast({
+        title: "Insufficient payment",
+        description: "Amount paid must be greater than or equal to grand total.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -80,11 +107,20 @@ export default function InvoicesPage() {
       const response = await axiosInstance.post("/invoices", {
         customerName,
         items: filteredItems,
+        taxRate,
+        amountPaid,
+        paymentMethod,
+        keterangan,
       });
 
       setCreatedInvoice(response.data);
       setItems([{ productId: "", quantity: 1 }]);
       setCustomerName("");
+      setTaxRate(11);
+      setAmountPaid(0);
+      setPaymentMethod("Cash");
+      setKeterangan("");
+      setIsFinished(false);
       await loadProducts();
 
       toast({
@@ -100,6 +136,14 @@ export default function InvoicesPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const finishInvoice = () => {
+    setIsFinished(true);
+    toast({
+      title: "Invoice finished",
+      description: "Invoice has already been stored in database and marked as completed.",
+    });
   };
 
   return (
@@ -118,6 +162,22 @@ export default function InvoicesPage() {
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Payment Method</Label>
+              <div className="flex flex-wrap gap-2">
+                {PAYMENT_METHODS.map((method) => (
+                  <Button
+                    key={method}
+                    type="button"
+                    variant={paymentMethod === method ? "default" : "outline"}
+                    onClick={() => setPaymentMethod(method)}
+                  >
+                    {method}
+                  </Button>
+                ))}
+              </div>
             </div>
 
             <div className="space-y-3">
@@ -173,10 +233,53 @@ export default function InvoicesPage() {
                 <PlusCircle className="h-4 w-4 mr-2" />
                 Add Item
               </Button>
+              <p className="text-sm text-muted-foreground">Subtotal: ${estimatedTotal.toFixed(2)}</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="taxRate">Tax Information (%)</Label>
+                <Input
+                  id="taxRate"
+                  type="number"
+                  min={0}
+                  value={taxRate}
+                  onChange={(e) => setTaxRate(Math.max(Number(e.target.value) || 0, 0))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="amountPaid">Amount Paid</Label>
+                <Input
+                  id="amountPaid"
+                  type="number"
+                  min={0}
+                  value={amountPaid}
+                  onChange={(e) => setAmountPaid(Math.max(Number(e.target.value) || 0, 0))}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="keterangan">Payment Information (Keterangan)</Label>
+              <textarea
+                id="keterangan"
+                className="w-full min-h-24 rounded-md border bg-background px-3 py-2"
+                placeholder="Contoh: Bayar tunai pecahan 100rb"
+                value={keterangan}
+                onChange={(e) => setKeterangan(e.target.value)}
+              />
+            </div>
+
+            <div className="flex justify-end">
               <Button type="button" onClick={createInvoice} disabled={isSubmitting}>
                 {isSubmitting ? "Creating..." : "Create Invoice"}
               </Button>
-              <p className="text-sm text-muted-foreground">Estimated Total: ${estimatedTotal.toFixed(2)}</p>
+            </div>
+
+            <div className="rounded-md border p-3 text-sm space-y-1">
+              <p>Tax Amount: ${estimatedTaxAmount.toFixed(2)}</p>
+              <p className="font-medium">Grand Total: ${estimatedGrandTotal.toFixed(2)}</p>
+              <p>Return/Change: ${estimatedChange.toFixed(2)}</p>
             </div>
           </CardContent>
         </Card>
@@ -189,11 +292,19 @@ export default function InvoicesPage() {
                 <p className="text-sm text-muted-foreground">
                   {createdInvoice.customerName} • {new Date(createdInvoice.createdAt).toLocaleString()}
                 </p>
+                <p className="text-sm text-emerald-600">
+                  This invoice is already saved in the database. Printing will not remove it.
+                </p>
               </div>
-              <Button type="button" variant="outline" className="print:hidden" onClick={() => window.print()}>
-                <Printer className="h-4 w-4 mr-2" />
-                Print / Save PDF
-              </Button>
+              <div className="flex gap-2 print:hidden">
+                <Button type="button" variant="outline" onClick={() => window.print()}>
+                  <Printer className="h-4 w-4 mr-2" />
+                  Print / Save PDF
+                </Button>
+                <Button type="button" onClick={finishInvoice} disabled={isFinished}>
+                  {isFinished ? "Invoice Finished" : "Finish Invoice"}
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <table className="w-full border-collapse">
@@ -221,8 +332,14 @@ export default function InvoicesPage() {
                 </tbody>
               </table>
 
-              <div className="mt-4 text-right font-semibold text-lg">
-                Total: ${createdInvoice.totalAmount.toFixed(2)}
+              <div className="mt-4 text-right space-y-1">
+                <p>Payment Method: {createdInvoice.paymentMethod}</p>
+                <p>Subtotal: ${createdInvoice.totalAmount.toFixed(2)}</p>
+                <p>Tax ({createdInvoice.taxRate}%): ${createdInvoice.taxAmount.toFixed(2)}</p>
+                <p className="font-semibold text-lg">Grand Total: ${createdInvoice.grandTotal.toFixed(2)}</p>
+                <p>Amount Paid: ${createdInvoice.amountPaid.toFixed(2)}</p>
+                <p>Return/Change: ${createdInvoice.changeAmount.toFixed(2)}</p>
+                <p>Keterangan: {createdInvoice.keterangan || "-"}</p>
               </div>
             </CardContent>
           </Card>

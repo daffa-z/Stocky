@@ -20,6 +20,10 @@ export interface Product {
 export interface Supplier {
   id: string;
   name: string;
+  contactName?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
   userId: string;
 }
 
