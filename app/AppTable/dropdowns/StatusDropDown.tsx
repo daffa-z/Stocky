@@ -18,15 +18,15 @@ import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 
 type Status = {
-  value: "Available" | "Stock Out" | "Stock Low";
+  value: "Tersedia" | "Stok Habis" | "Stok Menipis";
   label: string;
   icon: React.ReactNode;
 };
 
 const statuses: Status[] = [
-  { value: "Available", label: "Available", icon: <FaCheck /> },
-  { value: "Stock Out", label: "Stock Out", icon: <IoClose /> },
-  { value: "Stock Low", label: "Stock Low", icon: <LuGitPullRequestDraft /> },
+  { value: "Tersedia", label: "Tersedia", icon: <FaCheck /> },
+  { value: "Stok Habis", label: "Stok Habis", icon: <IoClose /> },
+  { value: "Stok Menipis", label: "Stok Menipis", icon: <LuGitPullRequestDraft /> },
 ];
 
 type StatusDropDownProps = {
@@ -42,11 +42,11 @@ export function StatusDropDown({
 
   function returnColor(status: string) {
     switch (status) {
-      case "Available":
+      case "Tersedia":
         return "text-green-600 bg-green-100";
-      case "Stock Out":
+      case "Stok Habis":
         return "text-red-600 bg-red-100";
-      case "Stock Low":
+      case "Stok Menipis":
         return "text-orange-600 bg-orange-100";
       default:
         return "";
@@ -115,7 +115,7 @@ export function StatusDropDown({
                 className="text-[12px] mb-1"
                 onClick={clearFilters}
               >
-                Clear Filters
+                Hapus Filter
               </Button>
             </div>
           </Command>

@@ -22,29 +22,34 @@ import ProductName from "./_components/ProductName";
 import SKU from "./_components/SKU";
 import Quantity from "./_components/Quantity";
 import Price from "./_components/Price";
+import Unit from "./_components/Unit";
 import { Product } from "@/app/types";
 
 const ProductSchema = z.object({
   productName: z
     .string()
-    .min(1, "Product Name is required")
-    .max(100, "Product Name must be 100 characters or less"),
+    .min(1, "Nama barang wajib diisi")
+    .max(100, "Nama barang maksimal 100 karakter"),
   sku: z
     .string()
-    .min(1, "SKU is required")
-    .regex(/^[a-zA-Z0-9-_]+$/, "SKU must be alphanumeric"),
+    .min(1, "SKU wajib diisi")
+    .regex(/^[a-zA-Z0-9-_]+$/, "SKU harus berupa huruf/angka"),
   quantity: z
     .number()
-    .int("Quantity must be an integer")
-    .nonnegative("Quantity cannot be negative"),
-  price: z.number().nonnegative("Price cannot be negative"),
+    .int("Stok harus berupa bilangan bulat")
+    .nonnegative("Stok tidak boleh negatif"),
+  unit: z.string().min(1, "Satuan wajib diisi"),
+  buyPrice: z.number().nonnegative("Harga beli tidak boleh negatif"),
+  sellPrice: z.number().nonnegative("Harga jual tidak boleh negatif"),
 });
 
 interface ProductFormData {
   productName: string;
   sku: string;
   quantity: number;
-  price: number;
+  unit: string;
+  buyPrice: number;
+  sellPrice: number;
 }
 
 interface AddProductDialogProps {
@@ -62,7 +67,9 @@ export default function AddProductDialog({
       productName: "",
       sku: "",
       quantity: 0,
-      price: 0.0,
+      unit: "pcs",
+      buyPrice: 0,
+      sellPrice: 0,
     },
   });
 
@@ -93,7 +100,9 @@ export default function AddProductDialog({
         productName: selectedProduct.name,
         sku: selectedProduct.sku,
         quantity: selectedProduct.quantity,
-        price: selectedProduct.price,
+        unit: selectedProduct.unit || "pcs",
+        buyPrice: selectedProduct.buyPrice ?? selectedProduct.price,
+        sellPrice: selectedProduct.sellPrice ?? selectedProduct.price,
       });
       setSelectedCategory(selectedProduct.categoryId || "");
       setSelectedSupplier(selectedProduct.supplierId || "");
@@ -103,7 +112,9 @@ export default function AddProductDialog({
         productName: "",
         sku: "",
         quantity: 0,
-        price: 0.0,
+        unit: "pcs",
+        buyPrice: 0,
+        sellPrice: 0,
       });
       setSelectedCategory("");
       setSelectedSupplier("");
@@ -111,9 +122,9 @@ export default function AddProductDialog({
   }, [selectedProduct, openProductDialog, reset]);
 
   const calculateStatus = (quantity: number): string => {
-    if (quantity > 20) return "Available";
-    if (quantity > 0 && quantity <= 20) return "Stock Low";
-    return "Stock Out";
+    if (quantity > 20) return "Tersedia";
+    if (quantity > 0 && quantity <= 20) return "Stok Menipis";
+    return "Stok Habis";
   };
 
   const onSubmit = async (data: ProductFormData) => {
@@ -126,7 +137,10 @@ export default function AddProductDialog({
           id: Date.now().toString(),
           supplierId: selectedSupplier,
           name: data.productName,
-          price: data.price,
+          price: data.sellPrice,
+          buyPrice: data.buyPrice,
+          sellPrice: data.sellPrice,
+          unit: data.unit,
           quantity: data.quantity,
           sku: data.sku,
           status,
@@ -139,7 +153,7 @@ export default function AddProductDialog({
 
         if (result.success) {
           toast({
-            title: "Product Created Successfully!",
+            title: "Produk berhasil dibuat!",
             description: `"${data.productName}" has been added to your inventory.`,
           });
           dialogCloseRef.current?.click();
@@ -147,7 +161,7 @@ export default function AddProductDialog({
           setOpenProductDialog(false);
         } else {
           toast({
-            title: "Creation Failed",
+            title: "Gagal membuat produk",
             description: "Failed to create the product. Please try again.",
             variant: "destructive",
           });
@@ -158,7 +172,10 @@ export default function AddProductDialog({
           createdAt: new Date(selectedProduct.createdAt), // Convert string to Date
           supplierId: selectedSupplier,
           name: data.productName,
-          price: data.price,
+          price: data.sellPrice,
+          buyPrice: data.buyPrice,
+          sellPrice: data.sellPrice,
+          unit: data.unit,
           quantity: data.quantity,
           sku: data.sku,
           status,
@@ -169,14 +186,14 @@ export default function AddProductDialog({
         const result = await updateProduct(productToUpdate);
         if (result.success) {
           toast({
-            title: "Product Updated Successfully!",
+            title: "Produk berhasil diperbarui!",
             description: `"${data.productName}" has been updated in your inventory.`,
           });
           loadProducts();
           setOpenProductDialog(false);
         } else {
           toast({
-            title: "Update Failed",
+            title: "Gagal memperbarui produk",
             description: "Failed to update the product. Please try again.",
             variant: "destructive",
           });
@@ -207,7 +224,7 @@ export default function AddProductDialog({
   return (
     <Dialog open={openProductDialog} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button className="h-10 font-semibold">+Add Product</Button>
+        <Button className="h-10 font-semibold">+Tambah Produk</Button>
       </DialogTrigger>
       <DialogContent
         className="p-4 sm:p-7 sm:px-8 poppins max-h-[90vh] overflow-y-auto"
@@ -215,11 +232,11 @@ export default function AddProductDialog({
       >
         <DialogHeader>
           <DialogTitle className="text-[22px]">
-            {selectedProduct ? "Update Product" : "Add Product"}
+            {selectedProduct ? "Perbarui Produk" : "Tambah Produk"}
           </DialogTitle>
         </DialogHeader>
         <DialogDescription id="dialog-description">
-          Enter the details of the product below.
+          Isi detail produk di bawah ini.
         </DialogDescription>
         <FormProvider {...methods}>
           <form onSubmit={methods.handleSubmit(onSubmit)}>
@@ -227,10 +244,20 @@ export default function AddProductDialog({
               <ProductName />
               <SKU allProducts={allProducts} />
               <Quantity />
-              <Price />
+              <Unit />
+              <Price
+                fieldName="buyPrice"
+                label="Harga Beli"
+                placeholder="Harga beli..."
+              />
+              <Price
+                fieldName="sellPrice"
+                label="Harga Jual"
+                placeholder="Harga jual..."
+              />
               <div>
                 <label htmlFor="category" className="block text-sm font-medium">
-                  Category
+                  Kategori
                 </label>
                 <select
                   id="category"
@@ -238,7 +265,7 @@ export default function AddProductDialog({
                   onChange={(e) => setSelectedCategory(e.target.value)}
                   className="mt-1 h-11 block w-full rounded-md border-gray-300 shadow-md focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                 >
-                  <option value="">Select Category</option>
+                  <option value="">Pilih Kategori</option>
                   {categories.map((category) => (
                     <option key={category.id} value={category.id}>
                       {category.name}
@@ -248,7 +275,7 @@ export default function AddProductDialog({
               </div>
               <div>
                 <label htmlFor="supplier" className="block text-sm font-medium">
-                  Supplier
+                  Pemasok
                 </label>
                 <select
                   id="supplier"
@@ -256,7 +283,7 @@ export default function AddProductDialog({
                   onChange={(e) => setSelectedSupplier(e.target.value)}
                   className="mt-1 h-11 block w-full rounded-md border-gray-300 shadow-md focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                 >
-                  <option value="">Select Supplier</option>
+                  <option value="">Pilih Pemasok</option>
                   {suppliers.map((supplier) => (
                     <option key={supplier.id} value={supplier.id}>
                       {supplier.name}
@@ -272,7 +299,7 @@ export default function AddProductDialog({
                   variant="secondary"
                   className="h-11 w-full sm:w-auto px-11"
                 >
-                  Cancel
+                  Batal
                 </Button>
               </DialogClose>
               <Button
@@ -281,10 +308,10 @@ export default function AddProductDialog({
                 isLoading={isSubmitting} // Button loading effect
               >
                 {isSubmitting
-                  ? "Loading..."
+                  ? "Memuat..."
                   : selectedProduct
-                  ? "Update Product"
-                  : "Add Product"}
+                  ? "Perbarui Produk"
+                  : "Tambah Produk"}
               </Button>
             </DialogFooter>
           </form>

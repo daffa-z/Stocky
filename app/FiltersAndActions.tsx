@@ -88,14 +88,16 @@ export default function FiltersAndActions({
       }
 
       const csvData = filteredProducts.map(product => ({
-        'Product Name': product.name,
+        'Tanggal Input': new Date(product.createdAt).toLocaleDateString('id-ID'),
+        'Nama Barang': product.name,
         'SKU': product.sku,
-        'Price': `$${product.price.toFixed(2)}`,
-        'Quantity': product.quantity,
+        'Stok': product.quantity,
+        'Satuan': product.unit || 'pcs',
+        'Harga Beli': product.buyPrice ?? product.price,
+        'Harga Jual': product.sellPrice ?? product.price,
         'Status': product.status,
-        'Category': product.category || 'Unknown',
-        'Supplier': product.supplier || 'Unknown',
-        'Created Date': new Date(product.createdAt).toLocaleDateString(),
+        'Kategori': product.category || 'Tidak Diketahui',
+        'Supplier': product.supplier || 'Tidak Diketahui',
       }));
 
       const csv = Papa.unparse(csvData);
@@ -136,14 +138,16 @@ export default function FiltersAndActions({
       }
 
       const excelData = filteredProducts.map(product => ({
-        'Product Name': product.name,
+        'Tanggal Input': new Date(product.createdAt).toLocaleDateString('id-ID'),
+        'Nama Barang': product.name,
         'SKU': product.sku,
-        'Price': product.price,
-        'Quantity': product.quantity,
+        'Stok': product.quantity,
+        'Satuan': product.unit || 'pcs',
+        'Harga Beli': product.buyPrice ?? product.price,
+        'Harga Jual': product.sellPrice ?? product.price,
         'Status': product.status,
-        'Category': product.category || 'Unknown',
-        'Supplier': product.supplier || 'Unknown',
-        'Created Date': new Date(product.createdAt).toLocaleDateString(),
+        'Kategori': product.category || 'Tidak Diketahui',
+        'Supplier': product.supplier || 'Tidak Diketahui',
       }));
 
       const ws = XLSX.utils.json_to_sheet(excelData);
@@ -152,14 +156,16 @@ export default function FiltersAndActions({
 
       // Auto-size columns
       const colWidths = [
-        { wch: 20 }, // Product Name
+        { wch: 14 }, // Tanggal Input
+        { wch: 20 }, // Nama Barang
         { wch: 15 }, // SKU
-        { wch: 10 }, // Price
-        { wch: 10 }, // Quantity
+        { wch: 10 }, // Stok
+        { wch: 10 }, // Satuan
+        { wch: 14 }, // Harga Beli
+        { wch: 14 }, // Harga Jual
         { wch: 12 }, // Status
-        { wch: 15 }, // Category
+        { wch: 15 }, // Kategori
         { wch: 15 }, // Supplier
-        { wch: 12 }, // Created Date
       ];
       ws['!cols'] = colWidths;
 

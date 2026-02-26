@@ -62,7 +62,7 @@ export const columns: ColumnDef<Product>[] = [
   {
     accessorKey: "createdAt",
     header: ({ column }) => (
-      <SortableHeader column={column} label="Created At" />
+      <SortableHeader column={column} label="Tanggal Input" />
     ),
     cell: ({ getValue }) => {
       const dateValue = getValue<string | Date>();
@@ -70,12 +70,12 @@ export const columns: ColumnDef<Product>[] = [
         typeof dateValue === "string" ? new Date(dateValue) : dateValue;
 
       if (!date || isNaN(date.getTime())) {
-        return <span>Unknown Date</span>;
+        return <span>Tanggal Tidak Diketahui</span>;
       }
 
       return (
         <span>
-          {date.toLocaleDateString("en-US", {
+          {date.toLocaleDateString("id-ID", {
             year: "numeric",
             month: "long",
             day: "numeric",
@@ -90,7 +90,7 @@ export const columns: ColumnDef<Product>[] = [
       const name = row.original.name;
       return <span>{name}</span>;
     },
-    header: ({ column }) => <SortableHeader column={column} label="Name" />,
+    header: ({ column }) => <SortableHeader column={column} label="Nama Barang" />,
   },
   {
     accessorKey: "sku",
@@ -98,7 +98,7 @@ export const columns: ColumnDef<Product>[] = [
   },
   {
     accessorKey: "quantity",
-    header: ({ column }) => <SortableHeader column={column} label="Quantity" />,
+    header: ({ column }) => <SortableHeader column={column} label="Stok" />,
     cell: ({ row }) => {
       const quantity = row.original.quantity;
       const isLowStock = quantity > 0 && quantity < 10;
@@ -120,9 +120,25 @@ export const columns: ColumnDef<Product>[] = [
     },
   },
   {
-    accessorKey: "price",
-    header: ({ column }) => <SortableHeader column={column} label="Price" />,
-    cell: ({ getValue }) => `$${getValue<number>().toFixed(2)}`,
+    accessorKey: "unit",
+    header: ({ column }) => <SortableHeader column={column} label="Satuan" />,
+    cell: ({ row }) => <span>{row.original.unit || "pcs"}</span>,
+  },
+  {
+    accessorKey: "buyPrice",
+    header: ({ column }) => <SortableHeader column={column} label="Harga Beli" />,
+    cell: ({ row }) => {
+      const value = row.original.buyPrice ?? row.original.price;
+      return <span>{`Rp${value.toLocaleString("id-ID")}`}</span>;
+    },
+  },
+  {
+    accessorKey: "sellPrice",
+    header: ({ column }) => <SortableHeader column={column} label="Harga Jual" />,
+    cell: ({ row }) => {
+      const value = row.original.sellPrice ?? row.original.price;
+      return <span>{`Rp${value.toLocaleString("id-ID")}`}</span>;
+    },
   },
   {
     accessorKey: "status",
@@ -133,13 +149,13 @@ export const columns: ColumnDef<Product>[] = [
       let colorClass = "";
 
       if (quantity > 20) {
-        status = "Available";
+        status = "Tersedia";
         colorClass = "bg-green-100 text-green-600";
       } else if (quantity > 0 && quantity <= 20) {
-        status = "Stock Low";
+        status = "Stok Menipis";
         colorClass = "bg-orange-100 text-orange-600";
       } else {
-        status = "Stock Out";
+        status = "Stok Habis";
         colorClass = "bg-red-100 text-red-600";
       }
 
@@ -154,10 +170,10 @@ export const columns: ColumnDef<Product>[] = [
   },
   {
     accessorKey: "category",
-    header: "Category",
+    header: "Kategori",
     cell: ({ row }) => {
       const categoryName = row.original.category;
-      return <span>{categoryName || "Unknown"}</span>;
+      return <span>{categoryName || "Tidak Diketahui"}</span>;
     },
   },
   {
@@ -165,19 +181,21 @@ export const columns: ColumnDef<Product>[] = [
     header: "Supplier",
     cell: ({ row }) => {
       const supplierName = row.original.supplier; // Display supplier name
-      return <span>{supplierName || "Unknown"}</span>;
+      return <span>{supplierName || "Tidak Diketahui"}</span>;
     },
   },
   {
     id: "qrCode",
-    header: "QR Code",
+    header: "QRCode",
     cell: ({ row }) => {
       const product = row.original;
       const qrData = JSON.stringify({
         id: product.id,
         name: product.name,
         sku: product.sku,
-        price: product.price,
+        unit: product.unit,
+        hargaBeli: product.buyPrice ?? product.price,
+        hargaJual: product.sellPrice ?? product.price,
         quantity: product.quantity,
         status: product.status,
         category: product.category,

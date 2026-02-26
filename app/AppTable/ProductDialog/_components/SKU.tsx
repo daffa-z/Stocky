@@ -28,8 +28,8 @@ export default function SKU({ allProducts }: SKUProps) {
     );
 
     if (isSkuTaken) {
-      setSkuError("SKU is already used. Try a new one.");
-      setError("sku", { type: "manual", message: "SKU is already used." });
+      setSkuError("SKU sudah digunakan. Coba yang lain.");
+      setError("sku", { type: "manual", message: "SKU sudah digunakan." });
     } else {
       setSkuError(null);
       clearErrors("sku");
