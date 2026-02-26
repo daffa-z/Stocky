@@ -148,7 +148,10 @@ export default async function handler(
           })
         );
 
-        res.status(200).json(transformedProducts);
+        const safeProducts = transformedProducts.filter((product): product is NonNullable<typeof product> => Boolean(product));
+
+        res.status(200).json(safeProducts);
+
       } catch (error) {
         res.status(500).json({ error: "Failed to fetch products" });
       }
