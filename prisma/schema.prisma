@@ -80,7 +80,6 @@ model StockAllocation {
 }
 
 model Supplier {
-  model Supplier {
   id          String  @id @default(auto()) @map("_id") @db.ObjectId
   name        String
   contactName String?
@@ -88,7 +87,7 @@ model Supplier {
   email       String?
   address     String?
   userId      String  @db.ObjectId
-}
+
 }
 
 model User {

@@ -50,7 +50,7 @@ export default function InvoicesPage() {
   const [items, setItems] = useState<InvoiceItemForm[]>([{ productId: "", quantity: 1 }]);
   const [taxRate, setTaxRate] = useState(11);
   const [amountPaid, setAmountPaid] = useState(0);
-  const [paymentMethod, setPaymentMethod] = useState<(typeof PAYMENT_METHODS)[number]>("Cash");
+  const [paymentMethod, setPaymentMethod] = useState<(typeof PAYMENT_METHODS)[number]>("Tunai");
   const [keterangan, setKeterangan] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdInvoice, setCreatedInvoice] = useState<CreatedInvoice | null>(null);
@@ -117,7 +117,7 @@ export default function InvoicesPage() {
       setCustomerName("");
       setTaxRate(11);
       setAmountPaid(0);
-      setPaymentMethod("Cash");
+      setPaymentMethod("Tunai");
       setKeterangan("");
       setIsFinished(false);
       await loadProducts();
