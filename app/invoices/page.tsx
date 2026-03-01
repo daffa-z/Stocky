@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import axiosInstance from "@/utils/axiosInstance";
 import { ArrowRight, PlusCircle, Printer, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import Link from "next/link";
 import React, { useEffect, useMemo, useState } from "react";
 
@@ -286,45 +288,73 @@ export default function InvoicesPage() {
               </div>
             )}
             <div className="space-y-3">
-              <Label htmlFor="productSearch">Add Product</Label>
-              <Input
-                id="productSearch"
-                placeholder="Search by name, SKU, supplier..."
-                value={productSearch}
-                onChange={(e) => setProductSearch(e.target.value)}
-              />
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 max-h-72 overflow-y-auto pr-1">
-                {filteredProducts.map((product) => {
-                  const alreadyAdded = items.some((item) => item.productId === product.id);
-                  return (
-                    <button
-                      key={product.id}
-                      type="button"
-                      onClick={() => addProductToInvoice(product.id)}
-                      className="text-left rounded-lg border p-3 transition hover:shadow-md hover:border-primary/50"
-                    >
-                      <p className="font-medium">{product.name}</p>
-                      <p className="text-xs text-muted-foreground">SKU: {product.sku || "-"}</p>
-                      <p className="text-xs text-muted-foreground">Supplier: {product.supplier || "Unknown"}</p>
-                      <div className="mt-2 flex items-center justify-between text-sm">
-                        <span>Stock: {product.quantity}</span>
-                        <span>{formatCurrency(product.price)}</span>
-                      </div>
-                      <p className="mt-2 text-xs text-primary flex items-center gap-1">
-                        <PlusCircle className="h-3 w-3" />
-                        {alreadyAdded ? "Add one more" : "Add to invoice"}
-                      </p>
-                    </button>
-                  );
-                })}
-              </div>
-              {!filteredProducts.length && <p className="text-sm text-muted-foreground">No products match your search.</p>}
+              <Label>Add Product</Label>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button type="button" variant="outline">
+                    <PlusCircle className="h-4 w-4 mr-2" />
+                    Open Product Selector
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-5xl">
+                  <DialogHeader>
+                    <DialogTitle>Select Product</DialogTitle>
+                    <DialogDescription>
+                      Search and pick product from table, then add each item one by one to invoice.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-3">
+                    <Input
+                      id="productSearch"
+                      placeholder="Search by name, SKU, supplier..."
+                      value={productSearch}
+                      onChange={(e) => setProductSearch(e.target.value)}
+                    />
+                    <div className="max-h-[420px] overflow-y-auto rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Product</TableHead>
+                            <TableHead>SKU</TableHead>
+                            <TableHead>Supplier</TableHead>
+                            <TableHead>Stock</TableHead>
+                            <TableHead>Price</TableHead>
+                            <TableHead className="text-right">Action</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredProducts.map((product) => {
+                            const alreadyAdded = items.some((item) => item.productId === product.id);
+                            return (
+                              <TableRow key={product.id}>
+                                <TableCell className="font-medium">{product.name}</TableCell>
+                                <TableCell>{product.sku || "-"}</TableCell>
+                                <TableCell>{product.supplier || "Unknown"}</TableCell>
+                                <TableCell>{product.quantity}</TableCell>
+                                <TableCell>{formatCurrency(product.price)}</TableCell>
+                                <TableCell className="text-right">
+                                  <Button type="button" size="sm" onClick={() => addProductToInvoice(product.id)}>
+                                    {alreadyAdded ? "Add +1" : "Add"}
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                    {!filteredProducts.length && <p className="text-sm text-muted-foreground">No products found in database for this search.</p>}
+                  </div>
+                </DialogContent>
+              </Dialog>
+              {!!allProducts.length && <p className="text-xs text-muted-foreground">Available products: {allProducts.length}</p>}
+              {!allProducts.length && <p className="text-xs text-muted-foreground">No products loaded yet. Please check product data/API.</p>}
             </div>
 
             <div className="space-y-3">
               <Label>Selected Items</Label>
               {items.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No items selected yet. Click a product card to add it.</p>
+                <p className="text-sm text-muted-foreground">No items selected yet. Open Product Selector to add items.</p>
               ) : (
                 <div className="space-y-2">
                   {items.map((item) => {
