@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import axiosInstance from "@/utils/axiosInstance";
-import { MinusCircle, PlusCircle, Printer } from "lucide-react";
+import { ArrowRight, MinusCircle, PlusCircle, Printer } from "lucide-react";
+import Link from "next/link";
 import React, { useEffect, useMemo, useState } from "react";
 
 interface InvoiceItemForm {
@@ -148,6 +149,22 @@ export default function InvoicesPage() {
   return (
     <AuthenticatedLayout>
       <div className="space-y-6 p-4 lg:p-0">
+        <Card className="print:hidden">
+          <CardContent className="py-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium">Need a quick operational review?</p>
+              <p className="text-xs text-muted-foreground">Use the data pages to track invoice movement and purchasing behavior.</p>
+            </div>
+            <div className="flex gap-2">
+              <Link href="/invoices/data">
+                <Button variant="outline">Invoice Data</Button>
+              </Link>
+              <Link href="/invoices/purchasing">
+                <Button>Purchasing Review <ArrowRight className="h-4 w-4 ml-1" /></Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
         <Card className="print:hidden">
           <CardHeader>
             <CardTitle>Create Invoice</CardTitle>
