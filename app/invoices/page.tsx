@@ -24,6 +24,10 @@ interface CreatedInvoice {
   totalAmount: number;
   taxRate: number;
   taxAmount: number;
+  discountType: "percentage" | "fixed";
+  discountValue: number;
+  discountAmount: number;
+  promoCode: string;
   grandTotal: number;
   amountPaid: number;
   changeAmount: number;
@@ -57,6 +61,9 @@ export default function InvoicesPage() {
   const [customerName, setCustomerName] = useState("");
   const [items, setItems] = useState<InvoiceItemForm[]>([{ productId: "", quantity: 1 }]);
   const [taxRate, setTaxRate] = useState(11);
+  const [discountType, setDiscountType] = useState<"percentage" | "fixed">("fixed");
+  const [discountValue, setDiscountValue] = useState(0);
+  const [promoCode, setPromoCode] = useState("");
   const [amountPaid, setAmountPaid] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<(typeof PAYMENT_METHODS)[number]>("Tunai");
   const [keterangan, setKeterangan] = useState("");
@@ -87,8 +94,15 @@ export default function InvoicesPage() {
     }, 0);
   }, [items, allProducts]);
 
-  const estimatedTaxAmount = useMemo(() => estimatedTotal * (taxRate / 100), [estimatedTotal, taxRate]);
-  const estimatedGrandTotal = useMemo(() => estimatedTotal + estimatedTaxAmount, [estimatedTaxAmount, estimatedTotal]);
+  const estimatedDiscountAmount = useMemo(() => {
+    if (discountType === "percentage") {
+      return Math.min(estimatedTotal * (Math.max(discountValue, 0) / 100), estimatedTotal);
+    }
+    return Math.min(Math.max(discountValue, 0), estimatedTotal);
+  }, [discountType, discountValue, estimatedTotal]);
+  const estimatedTaxableAmount = useMemo(() => Math.max(estimatedTotal - estimatedDiscountAmount, 0), [estimatedDiscountAmount, estimatedTotal]);
+  const estimatedTaxAmount = useMemo(() => estimatedTaxableAmount * (taxRate / 100), [estimatedTaxableAmount, taxRate]);
+  const estimatedGrandTotal = useMemo(() => estimatedTaxableAmount + estimatedTaxAmount, [estimatedTaxAmount, estimatedTaxableAmount]);
   const estimatedChange = useMemo(() => Math.max(amountPaid - estimatedGrandTotal, 0), [amountPaid, estimatedGrandTotal]);
   const createInvoice = async () => {
     const filteredItems = items.filter((item) => item.productId && item.quantity > 0);
@@ -115,6 +129,9 @@ export default function InvoicesPage() {
         customerName,
         items: filteredItems,
         taxRate,
+        discountType,
+        discountValue,
+        promoCode,
         amountPaid,
         paymentMethod,
         keterangan,
@@ -124,6 +141,9 @@ export default function InvoicesPage() {
       setItems([{ productId: "", quantity: 1 }]);
       setCustomerName("");
       setTaxRate(11);
+      setDiscountType("fixed");
+      setDiscountValue(0);
+      setPromoCode("");
       setAmountPaid(0);
       setPaymentMethod("Tunai");
       setKeterangan("");
@@ -258,6 +278,40 @@ export default function InvoicesPage() {
                  <p className="text-sm text-muted-foreground">Subtotal: {formatCurrency(estimatedTotal)}</p>
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="discountType">Discount Type</Label>
+                <select
+                  id="discountType"
+                  value={discountType}
+                  onChange={(e) => setDiscountType(e.target.value as "percentage" | "fixed")}
+                  className="w-full h-10 rounded-md border bg-background px-3"
+                >
+                  <option value="fixed">Fixed (IDR)</option>
+                  <option value="percentage">Percentage (%)</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="discountValue">Discount Value</Label>
+                <Input
+                  id="discountValue"
+                  type="number"
+                  min={0}
+                  value={discountValue}
+                  onChange={(e) => setDiscountValue(Math.max(Number(e.target.value) || 0, 0))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="promoCode">Promo Code</Label>
+                <Input
+                  id="promoCode"
+                  placeholder="PROMO10"
+                  value={promoCode}
+                  onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                />
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label htmlFor="taxRate">Tax Information (%)</Label>
@@ -292,6 +346,9 @@ export default function InvoicesPage() {
               />
             </div>
             <div className="rounded-md border p-3 text-sm space-y-1">
+              <p>Subtotal: {formatCurrency(estimatedTotal)}</p>
+              <p>Discount: -{formatCurrency(estimatedDiscountAmount)}</p>
+              <p>Taxable Amount: {formatCurrency(estimatedTaxableAmount)}</p>
               <p>Tax Amount: {formatCurrency(estimatedTaxAmount)}</p>
               <p className="font-medium">Grand Total: {formatCurrency(estimatedGrandTotal)}</p>
               <p>Return/Change: {formatCurrency(estimatedChange)}</p>
@@ -355,6 +412,8 @@ export default function InvoicesPage() {
               <div className="mt-4 text-right space-y-1">
                 <p>Payment Method: {createdInvoice.paymentMethod}</p>
                 <p>Subtotal: {formatCurrency(createdInvoice.totalAmount)}</p>
+                <p>Promo Code: {createdInvoice.promoCode || "-"}</p>
+                <p>Discount ({createdInvoice.discountType === "percentage" ? `${createdInvoice.discountValue}%` : formatCurrency(createdInvoice.discountValue)}): -{formatCurrency(createdInvoice.discountAmount)}</p>
                 <p>Tax ({createdInvoice.taxRate}%): {formatCurrency(createdInvoice.taxAmount)}</p>
                 <p className="font-semibold text-lg">Grand Total: {formatCurrency(createdInvoice.grandTotal)}</p>
                 <p>Amount Paid: {formatCurrency(createdInvoice.amountPaid)}</p>

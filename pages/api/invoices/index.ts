@@ -11,6 +11,11 @@ const toNumber = (value: unknown, fallback = 0) => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
+const normalizeDiscountType = (value: unknown): "percentage" | "fixed" => {
+  if (value === "percentage") return "percentage";
+  return "fixed";
+};
+
 const getStatusByQuantity = (quantity: number) => {
   if (quantity > 20) return "Available";
   if (quantity > 0) return "Stock Low";
@@ -59,6 +64,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           invoiceNumber: invoice.invoiceNumber,
           customerName: invoice.customerName,
           totalAmount: toNumber(invoice.totalAmount),
+          discountType: normalizeDiscountType(invoice.discountType),
+          discountValue: toNumber(invoice.discountValue),
+          discountAmount: toNumber(invoice.discountAmount),
+          promoCode: typeof invoice.promoCode === "string" ? invoice.promoCode : "",
           taxRate: toNumber(invoice.taxRate),
           taxAmount: toNumber(invoice.taxAmount),
           grandTotal: toNumber(invoice.grandTotal),
@@ -86,9 +95,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             acc.taxCollected += invoice.taxAmount;
             acc.invoiceCount += 1;
             acc.itemsSold += invoice.items.reduce((sum, item) => sum + item.quantity, 0);
+            acc.totalDiscount += invoice.discountAmount;
             return acc;
           },
-          { revenue: 0, taxCollected: 0, invoiceCount: 0, itemsSold: 0 }
+          { revenue: 0, taxCollected: 0, invoiceCount: 0, itemsSold: 0, totalDiscount: 0 }
         );
 
         const supplierMap = new Map<string, { supplier: string; quantity: number; revenue: number }>();
@@ -153,6 +163,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     amountPaid?: number;
     paymentMethod?: string;
     keterangan?: string;
+    discountType?: "percentage" | "fixed";
+    discountValue?: number;
+    promoCode?: string;
   };
 
   if (!Array.isArray(items) || items.length === 0) {
@@ -262,9 +275,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       );
 
       const totalAmount = preparedItems.reduce((sum, item) => sum + item.lineTotal, 0);
+      const parsedDiscountType = normalizeDiscountType(req.body.discountType);
+      const parsedDiscountValue = Number.isFinite(Number(req.body.discountValue)) ? Math.max(Number(req.body.discountValue), 0) : 0;
+      const discountAmount =
+        parsedDiscountType === "percentage"
+          ? Math.min(totalAmount * (parsedDiscountValue / 100), totalAmount)
+          : Math.min(parsedDiscountValue, totalAmount);
+      const taxableAmount = Math.max(totalAmount - discountAmount, 0);
       const parsedTaxRate = Number.isFinite(Number(taxRate)) ? Math.max(Number(taxRate), 0) : 0;
-      const taxAmount = totalAmount * (parsedTaxRate / 100);
-      const grandTotal = totalAmount + taxAmount;
+      const taxAmount = taxableAmount * (parsedTaxRate / 100);
+      const grandTotal = taxableAmount + taxAmount;
       const parsedAmountPaid = Number.isFinite(Number(amountPaid)) ? Math.max(Number(amountPaid), 0) : 0;
       const changeAmount = parsedAmountPaid - grandTotal;
 
@@ -278,6 +298,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         userId,
         customerName: customerName?.trim() || "Walk-in Customer",
         items: preparedItems.map(({ remainingQuantity, ...invoiceItem }) => invoiceItem),
+        discountType: parsedDiscountType,
+        discountValue: parsedDiscountValue,
+        discountAmount,
+        promoCode: typeof req.body.promoCode === "string" ? req.body.promoCode.trim().toUpperCase() : "",
         taxRate: parsedTaxRate,
         taxAmount,
         grandTotal,
