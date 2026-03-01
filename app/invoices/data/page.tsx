@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import axiosInstance from "@/utils/axiosInstance";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { Input } from "@/components/ui/input";
 
 interface InvoiceItem {
   productId: string;
@@ -41,6 +42,15 @@ interface Invoice {
 
 interface InvoiceDataResponse {
   invoices: Invoice[];
+  pagination: {
+    page: number;
+    limit: number;
+    totalCount: number;
+    totalPages: number;
+    hasPrev: boolean;
+    hasNext: boolean;
+    search: string;
+  };
   summary: {
     revenue: number;
     taxCollected: number;
@@ -63,12 +73,14 @@ export default function InvoiceDataPage() {
   const [data, setData] = useState<InvoiceDataResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     const loadInvoiceData = async () => {
       try {
         setIsLoading(true);
-        const response = await axiosInstance.get("/invoices", { params: { limit: 100 } });
+        const response = await axiosInstance.get("/invoices", { params: { limit: 20, page, search } });
         setData(response.data);
       } catch (error: any) {
         toast({
@@ -82,7 +94,7 @@ export default function InvoiceDataPage() {
     };
 
     loadInvoiceData();
-  }, [toast]);
+  }, [toast, page, search]);
 
   const paymentMethodSummary = useMemo(() => {
     if (!data) return [];
@@ -164,6 +176,26 @@ export default function InvoiceDataPage() {
               </Card>
             </div>
 
+
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
+                  <Input
+                    placeholder="Search invoice number, customer, promo, payment, note..."
+                    value={search}
+                    onChange={(e) => {
+                      setSearch(e.target.value);
+                      setPage(1);
+                    }}
+                    className="md:max-w-md"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Showing {data?.invoices.length || 0} of {data?.pagination.totalCount || 0} invoices
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
             <div className="grid gap-4 lg:grid-cols-5">
               <Card className="lg:col-span-3">
                 <CardHeader>
@@ -220,6 +252,31 @@ export default function InvoiceDataPage() {
                   )}
                 </CardContent>
               </Card>
+            </div>
+
+
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                Page {data?.pagination.page || 1} of {data?.pagination.totalPages || 1}
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={!data?.pagination.hasPrev}
+                >
+                  Previous
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setPage((prev) => prev + 1)}
+                  disabled={!data?.pagination.hasNext}
+                >
+                  Next
+                </Button>
+              </div>
             </div>
 
             {selectedInvoice && (

@@ -38,7 +38,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const userId = session.id;
 
   if (req.method === "GET") {
-    const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 200);
+    const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 100);
+    const page = Math.max(Number(req.query.page) || 1, 1);
+    const search = typeof req.query.search === "string" ? req.query.search.trim() : "";
 
     try {
       const mongoUri = process.env.DATABASE_URL;
@@ -52,12 +54,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       try {
         const dbName = new URL(mongoUri).pathname.replace("/", "") || undefined;
         const db = client.db(dbName);
-        const invoices = await db
-          .collection("invoices")
-          .find({ userId })
-          .sort({ createdAt: -1 })
-          .limit(limit)
-          .toArray();
+        const invoiceCollection = db.collection("invoices");
+
+        const query: any = { userId };
+        if (search) {
+          query.$or = [
+            { invoiceNumber: { $regex: search, $options: "i" } },
+            { customerName: { $regex: search, $options: "i" } },
+            { promoCode: { $regex: search, $options: "i" } },
+            { paymentMethod: { $regex: search, $options: "i" } },
+            { keterangan: { $regex: search, $options: "i" } },
+          ];
+        }
+
+        const totalCount = await invoiceCollection.countDocuments(query);
+        const totalPages = Math.max(Math.ceil(totalCount / limit), 1);
+        const safePage = Math.min(page, totalPages);
+        const skip = (safePage - 1) * limit;
+
+        const invoices = await invoiceCollection.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray();
 
         const normalizedInvoices = invoices.map((invoice: any) => ({
           id: String(invoice._id),
@@ -136,6 +151,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           summary: {
             ...totals,
             averageInvoiceValue: totals.invoiceCount > 0 ? totals.revenue / totals.invoiceCount : 0,
+          },
+          pagination: {
+            page: safePage,
+            limit,
+            totalCount,
+            totalPages,
+            hasPrev: safePage > 1,
+            hasNext: safePage < totalPages,
+            search,
           },
           supplierBreakdown,
           topProducts,
