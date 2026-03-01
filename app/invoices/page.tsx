@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import axiosInstance from "@/utils/axiosInstance";
 import { ArrowRight, PlusCircle, Printer, Trash2 } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import Link from "next/link";
 import React, { useEffect, useMemo, useState } from "react";
@@ -76,6 +76,7 @@ export default function InvoicesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdInvoice, setCreatedInvoice] = useState<CreatedInvoice | null>(null);
   const [isFinished, setIsFinished] = useState(false);
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   useEffect(() => {
     loadProducts();
   }, [loadProducts]);
@@ -133,12 +134,14 @@ export default function InvoicesPage() {
   const estimatedTaxAmount = useMemo(() => estimatedTaxableAmount * (taxRate / 100), [estimatedTaxableAmount, taxRate]);
   const estimatedGrandTotal = useMemo(() => estimatedTaxableAmount + estimatedTaxAmount, [estimatedTaxAmount, estimatedTaxableAmount]);
   const estimatedChange = useMemo(() => Math.max(amountPaid - estimatedGrandTotal, 0), [amountPaid, estimatedGrandTotal]);
-  const createInvoice = async () => {
-    const filteredItems = items.filter((item) => item.productId && item.quantity > 0);
+  const getFilteredItems = () => items.filter((item) => item.productId && item.quantity > 0);
+
+  const validateInvoiceInput = () => {
+    const filteredItems = getFilteredItems();
 
     if (filteredItems.length === 0) {
       toast({ title: "No invoice items", description: "Add at least one valid product line.", variant: "destructive" });
-      return;
+      return false;
     }
 
     if ((paymentMethod === "Bank Transfer" || paymentMethod === "Kartu Debit/Kredit") && !bankName) {
@@ -147,7 +150,7 @@ export default function InvoicesPage() {
         description: "Please select a bank for bank transfer or card payment.",
         variant: "destructive",
       });
-      return;
+      return false;
     }
 
     if (amountPaid < estimatedGrandTotal) {
@@ -156,9 +159,14 @@ export default function InvoicesPage() {
         description: "Amount paid must be greater than or equal to grand total.",
         variant: "destructive",
       });
-      return;
+      return false;
     }
 
+    return true;
+  };
+
+  const createInvoice = async () => {
+    const filteredItems = getFilteredItems();
 
     try {
       setIsSubmitting(true);
@@ -203,7 +211,13 @@ export default function InvoicesPage() {
       });
     } finally {
       setIsSubmitting(false);
+      setIsConfirmDialogOpen(false);
     }
+  };
+
+  const handleCreateInvoiceClick = () => {
+    if (!validateInvoiceInput()) return;
+    setIsConfirmDialogOpen(true);
   };
 
   const finishInvoice = () => {
@@ -474,15 +488,69 @@ export default function InvoicesPage() {
               <p>Return/Change: {formatCurrency(estimatedChange)}</p>
             </div>
             <div className="flex justify-end">
-              <Button type="button" onClick={createInvoice} disabled={isSubmitting}>
+              <Button type="button" onClick={handleCreateInvoiceClick} disabled={isSubmitting}>
                 {isSubmitting ? "Creating..." : "Create Invoice"}
               </Button>
             </div>  
           </CardContent>
         </Card>
 
+        <Dialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>Konfirmasi Invoice</DialogTitle>
+              <DialogDescription>Pastikan data sudah benar sebelum membuat invoice.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 text-sm">
+              <p><span className="font-medium">Customer:</span> {customerName || "Walk-in Customer"}</p>
+              <p><span className="font-medium">Payment:</span> {paymentMethod} {bankName ? `- ${bankName}` : ""}</p>
+              <div className="rounded-md border p-3 space-y-1">
+                <p>Subtotal: {formatCurrency(estimatedTotal)}</p>
+                <p>Discount: -{formatCurrency(estimatedDiscountAmount)}</p>
+                <p>Tax ({taxRate}%): {formatCurrency(estimatedTaxAmount)}</p>
+                <p className="font-semibold">Grand Total: {formatCurrency(estimatedGrandTotal)}</p>
+                <p>Amount Paid: {formatCurrency(amountPaid)}</p>
+                <p>Change: {formatCurrency(estimatedChange)}</p>
+              </div>
+              <div className="max-h-56 overflow-y-auto rounded-md border">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b text-left">
+                      <th className="px-2 py-2">Product</th>
+                      <th className="px-2 py-2">Qty</th>
+                      <th className="px-2 py-2 text-right">Line Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {getFilteredItems().map((item) => {
+                      const product = allProducts.find((p) => p.id === item.productId);
+                      if (!product) return null;
+                      return (
+                        <tr key={`confirm-${item.productId}`} className="border-b">
+                          <td className="px-2 py-2">{product.name}</td>
+                          <td className="px-2 py-2">{item.quantity}</td>
+                          <td className="px-2 py-2 text-right">{formatCurrency(product.price * item.quantity)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsConfirmDialogOpen(false)}>
+                Batal
+              </Button>
+              <Button type="button" onClick={createInvoice} disabled={isSubmitting}>
+                {isSubmitting ? "Membuat..." : "Ya, Buat Invoice"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+
         {createdInvoice && (
-          <Card>
+          <Card className="print:font-mono">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Invoice {createdInvoice.invoiceNumber}</CardTitle>
@@ -504,6 +572,7 @@ export default function InvoicesPage() {
               </div>
             </CardHeader>
             <CardContent>
+              <h3 className="text-xl font-bold mb-3 text-center">Rincian Transaksi Penjualan</h3>
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="border-b text-left">
@@ -540,6 +609,14 @@ export default function InvoicesPage() {
                 <p>Amount Paid: {formatCurrency(createdInvoice.amountPaid)}</p>
                 <p>Return/Change: {formatCurrency(createdInvoice.changeAmount)}</p>
                 <p>Keterangan: {createdInvoice.keterangan || "-"}</p>
+              </div>
+
+              <div className="mt-10 flex justify-end">
+                <div className="text-center min-w-56">
+                  <p>{new Date(createdInvoice.createdAt).toLocaleDateString("id-ID")}</p>
+                  <p className="mb-16">Mengetahui,</p>
+                  <p className="font-semibold underline">Koperasi</p>
+                </div>
               </div>
             </CardContent>
           </Card>

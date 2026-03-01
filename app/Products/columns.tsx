@@ -125,6 +125,14 @@ export const columns: ColumnDef<Product>[] = [
     cell: ({ row }) => <span>{row.original.unit || "pcs"}</span>,
   },
   {
+    accessorKey: "hetPrice",
+    header: ({ column }) => <SortableHeader column={column} label="HET" />,
+    cell: ({ row }) => {
+      const value = row.original.hetPrice ?? row.original.sellPrice ?? row.original.price;
+      return <span>{`Rp${value.toLocaleString("id-ID")}`}</span>;
+    },
+  },
+  {
     accessorKey: "buyPrice",
     header: ({ column }) => <SortableHeader column={column} label="Harga Beli" />,
     cell: ({ row }) => {
