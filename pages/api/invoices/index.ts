@@ -258,6 +258,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
       const supplierById = new Map(suppliers.map((supplier) => [supplier.id, supplier.name]));
 
+      const categoryIds = [...new Set(products.map((product: any) => product.categoryId).filter(Boolean))];
+      const categories = await prisma.category.findMany({
+        where: {
+          id: { in: categoryIds },
+          userId,
+        },
+      });
+      const categoryById = new Map(categories.map((category) => [category.id, category.name]));
+
       const preparedItems = mergedItems.map((item) => {
         const product: any = productById.get(item.productId);
         if (!product) {
@@ -279,8 +288,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           name: product.name,
           sku: product.sku,
           supplier: supplierById.get(product.supplierId) || "Unknown",
+          category: categoryById.get(product.categoryId) || "Unknown",
+          unit: product.unit || "pcs",
           price: unitPrice,
           quantity: item.quantity,
+          stockBefore: available,
           lineTotal,
           remainingQuantity: available - item.quantity,
         };
@@ -323,7 +335,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         invoiceNumber,
         userId,
         customerName: customerName?.trim() || "Walk-in Customer",
-        items: preparedItems.map(({ remainingQuantity, ...invoiceItem }) => invoiceItem),
+        items: preparedItems.map(({ remainingQuantity, stockBefore, category, unit, ...invoiceItem }) => invoiceItem),
         discountType: parsedDiscountType,
         discountValue: parsedDiscountValue,
         discountAmount,
@@ -341,6 +353,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       };
 
       const result = await db.collection("invoices").insertOne(invoiceDocument);
+
+      await db.collection("stock_movements").insertMany(
+        preparedItems.map((item) => ({
+          userId,
+          productId: item.productId,
+          productName: item.name,
+          category: item.category,
+          supplier: item.supplier,
+          unit: item.unit,
+          movementType: "OUT",
+          quantity: item.quantity,
+          stockBefore: item.stockBefore,
+          stockAfter: item.remainingQuantity,
+          invoiceReference: invoiceNumber,
+          notes: `Invoice ${invoiceNumber}`,
+          createdAt: new Date(),
+        }))
+      );
 
       return res.status(201).json({
         id: String(result.insertedId),

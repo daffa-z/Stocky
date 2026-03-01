@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AiFillProduct } from "react-icons/ai";
-import { FiActivity, FiBarChart, FiFileText, FiHome } from "react-icons/fi"; // Import icons for new nav items
+import { FiActivity, FiBarChart, FiFileText, FiHome, FiRepeat } from "react-icons/fi"; // Import icons for new nav items
 import { HiOutlineReceiptTax } from "react-icons/hi";
 import { useAuth } from "../authContext";
 import { ModeToggle } from "./ModeToggle";
@@ -89,6 +89,15 @@ export default function AppHeader() {
         >
           <HiOutlineReceiptTax className="mr-2 h-4 w-4" />
           Invoices
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => handleNavigation("/stock-movement")}
+          className="text-primary-foreground hover:bg-primary-dark"
+        >
+          <FiRepeat className="mr-2 h-4 w-4" />
+          Stock Movement
         </Button>
         <Button
           variant="ghost"
