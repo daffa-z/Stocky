@@ -22,6 +22,8 @@ const toNumber = (value: unknown, fallback = 0) => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
+const toRoundedTwo = (value: number) => Math.round(value * 100) / 100;
+
 const toIsoDate = (value: unknown) => {
   const date = value ? new Date(value as string | number | Date) : new Date();
   return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
@@ -82,8 +84,17 @@ export default async function handler(
           return res.status(400).json({ error: "SKU must be unique" });
         }
 
-        const normalizedSellPrice = toNumber(sellPrice ?? price, 0);
-        const normalizedBuyPrice = toNumber(buyPrice ?? normalizedSellPrice, 0);
+        const normalizedBuyPrice = toNumber(buyPrice ?? price, 0);
+        const minimumMarginPercent = Math.max(toNumber(req.body.minimumMarginPercent, 10), 0);
+        const minSellPrice = toRoundedTwo(normalizedBuyPrice * (1 + minimumMarginPercent / 100));
+        const requestedSellPrice = toNumber(sellPrice ?? price, minSellPrice);
+        const normalizedSellPrice = Math.max(requestedSellPrice, minSellPrice);
+        const hetPrice = toNumber(req.body.hetPrice, normalizedSellPrice);
+
+        if (hetPrice > 0 && normalizedSellPrice > hetPrice) {
+          return res.status(400).json({ error: "Harga jual tidak boleh melebihi HET" });
+        }
+
         const createdAt = new Date();
 
         const productDoc = {
@@ -98,6 +109,8 @@ export default async function handler(
           unit: unit || "pcs",
           buyPrice: normalizedBuyPrice,
           sellPrice: normalizedSellPrice,
+          hetPrice: hetPrice > 0 ? hetPrice : normalizedSellPrice,
+          minimumMarginPercent,
           price: normalizedSellPrice,
         };
 
@@ -148,6 +161,27 @@ export default async function handler(
             const categoryName = await findCategoryNameById(product.categoryId);
             const supplierName = await findSupplierNameById(product.supplierId);
 
+            const buy = toNumber(product.buyPrice, toNumber(product.price, 0));
+            const existingSell = toNumber(product.sellPrice, toNumber(product.price, 0));
+            const existingMargin = product.minimumMarginPercent;
+            const minimumMarginPercent = typeof existingMargin === "number" ? Math.max(existingMargin, 0) : 10;
+            const migratedSellPrice = typeof existingMargin === "number" ? existingSell : toRoundedTwo(existingSell * 1.1);
+            const hetPrice = toNumber(product.hetPrice, migratedSellPrice);
+
+            if (typeof existingMargin !== "number") {
+              await collection.updateOne(
+                { _id: product._id, userId },
+                {
+                  $set: {
+                    minimumMarginPercent,
+                    sellPrice: migratedSellPrice,
+                    price: migratedSellPrice,
+                    hetPrice,
+                  },
+                }
+              );
+            }
+
             return {
               id: product._id.toString(),
               name: product.name,
@@ -159,9 +193,11 @@ export default async function handler(
               supplierId: product.supplierId,
               createdAt: toIsoDate(product.createdAt),
               unit: product.unit || "pcs",
-              buyPrice: toNumber(product.buyPrice, toNumber(product.price, 0)),
-              sellPrice: toNumber(product.sellPrice, toNumber(product.price, 0)),
-              price: toNumber(product.sellPrice, toNumber(product.price, 0)),
+              buyPrice: buy,
+              sellPrice: migratedSellPrice,
+              hetPrice,
+              minimumMarginPercent,
+              price: migratedSellPrice,
               category: categoryName,
               supplier: supplierName,
             };
@@ -194,8 +230,16 @@ export default async function handler(
         } = req.body;
 
         const collection = await getProductsCollection();
-        const normalizedSellPrice = toNumber(sellPrice ?? price, 0);
-        const normalizedBuyPrice = toNumber(buyPrice ?? normalizedSellPrice, 0);
+        const normalizedBuyPrice = toNumber(buyPrice ?? price, 0);
+        const minimumMarginPercent = Math.max(toNumber(req.body.minimumMarginPercent, 10), 0);
+        const minSellPrice = toRoundedTwo(normalizedBuyPrice * (1 + minimumMarginPercent / 100));
+        const requestedSellPrice = toNumber(sellPrice ?? price, minSellPrice);
+        const normalizedSellPrice = Math.max(requestedSellPrice, minSellPrice);
+        const hetPrice = toNumber(req.body.hetPrice, normalizedSellPrice);
+
+        if (hetPrice > 0 && normalizedSellPrice > hetPrice) {
+          return res.status(400).json({ error: "Harga jual tidak boleh melebihi HET" });
+        }
 
         const previousProduct: any = await collection.findOne({ _id: new ObjectId(id), userId });
         if (!previousProduct) {
@@ -217,6 +261,8 @@ export default async function handler(
               unit: unit || "pcs",
               buyPrice: normalizedBuyPrice,
               sellPrice: normalizedSellPrice,
+              hetPrice: hetPrice > 0 ? hetPrice : normalizedSellPrice,
+              minimumMarginPercent,
               price: normalizedSellPrice,
             },
           }
@@ -264,6 +310,8 @@ export default async function handler(
           unit: updatedProduct.unit || "pcs",
           buyPrice: toNumber(updatedProduct.buyPrice, toNumber(updatedProduct.price, 0)),
           sellPrice: toNumber(updatedProduct.sellPrice, toNumber(updatedProduct.price, 0)),
+          hetPrice: toNumber(updatedProduct.hetPrice, toNumber(updatedProduct.sellPrice, toNumber(updatedProduct.price, 0))),
+          minimumMarginPercent: toNumber(updatedProduct.minimumMarginPercent, 10),
           price: toNumber(updatedProduct.sellPrice, toNumber(updatedProduct.price, 0)),
           category: categoryName,
           supplier: supplierName,
