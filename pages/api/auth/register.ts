@@ -45,6 +45,7 @@ export default async function handler(
         username,
         createdAt: new Date(),
         updatedAt: new Date(),
+        role: "USER",
       },
     });
 
@@ -53,6 +54,7 @@ export default async function handler(
       name: newUser.name,
       email: newUser.email,
       username: newUser.username,
+      role: newUser.role,
     });
   } catch (error) {
     if (isReplicaSetTransactionError(error)) {
@@ -83,6 +85,7 @@ export default async function handler(
           username,
           createdAt: now,
           updatedAt: now,
+          role: "USER",
         });
 
         return res.status(201).json({
@@ -90,6 +93,7 @@ export default async function handler(
           name,
           email,
           username,
+          role: "USER",
         });
       } catch (mongoError) {
         console.error("Register fallback error:", mongoError);

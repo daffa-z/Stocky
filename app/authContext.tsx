@@ -10,6 +10,7 @@ interface User {
   id: string;
   name?: string;
   email: string;
+  role: string;
 }
 
 interface AuthContextType {
@@ -72,6 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             id: session.id,
             name: session.name,
             email: session.email,
+            role: session.role || "USER",
           });
           // Debug log - only log in development
           if (process.env.NODE_ENV === 'development') {
@@ -106,6 +108,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         id: result.userId,
         name: result.userName,
         email: result.userEmail,
+        role: result.userRole || "USER",
       });
       Cookies.set("session_id", result.sessionId);
       // Debug log - only log in development

@@ -4,20 +4,24 @@ import jwt from "jsonwebtoken";
 import { PrismaClient, User as PrismaUser } from "@prisma/client";
 import Cookies from "js-cookie"; // Import js-cookie
 import { NextApiRequest, NextApiResponse } from "next";
+import { ObjectId } from "mongodb";
+import { getMongoDb } from "./mongo";
 
 const prisma = new PrismaClient();
 
 const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret";
 
-type User = PrismaUser;
+type SessionUser = Omit<PrismaUser, "password"> & {
+  role?: string;
+};
 
 // Check if we're on the server side
-const isServer = typeof window === 'undefined';
+const isServer = typeof window === "undefined";
 
 export const generateToken = (userId: string): string => {
   const token = jwt.sign({ userId }, JWT_SECRET, { expiresIn: "1h" });
   // Debug log - only log in development
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env.NODE_ENV === "development") {
     console.log("Generated Token:", token);
   }
   return token;
@@ -27,29 +31,29 @@ export const verifyToken = (token: string): { userId: string } | null => {
   if (!token || token === "null" || token === "undefined") {
     return null;
   }
-  
+
   // Only verify tokens on the server side
   if (!isServer) {
     // On client side, we'll just return null to avoid JWT library issues
     return null;
   }
-  
+
   try {
     // Check if jwt is properly imported
-    if (typeof jwt === 'undefined' || !jwt.verify) {
+    if (typeof jwt === "undefined" || !jwt.verify) {
       console.error("JWT library not properly loaded");
       return null;
     }
-    
+
     const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
     // Debug log - only log in development
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV === "development") {
       console.log("Verified Token:", decoded);
     }
     return decoded;
   } catch (error) {
     // Only log in development to avoid console errors in production
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV === "development") {
       console.error("Token verification error:", error);
     }
     return null;
@@ -59,10 +63,10 @@ export const verifyToken = (token: string): { userId: string } | null => {
 export const getSessionServer = async (
   req: NextApiRequest,
   res: NextApiResponse
-): Promise<User | null> => {
+): Promise<SessionUser | null> => {
   const token = req.cookies["session_id"];
   // Debug log - only log in development
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env.NODE_ENV === "development") {
     console.log("Session ID from cookies:", token);
   }
   if (!token) {
@@ -74,19 +78,48 @@ export const getSessionServer = async (
     return null;
   }
 
-  const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+  const user = (await prisma.user.findUnique({
+    where: { id: decoded.userId },
+  })) as (PrismaUser & { role?: string }) | null;
+
   // Debug log - only log in development
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env.NODE_ENV === "development") {
     console.log("User from session:", user);
   }
-  return user;
+  if (!user) {
+    return null;
+  }
+
+  let resolvedRole = user.role;
+
+  // Backfill role for existing users that don't have one yet.
+  if (!resolvedRole) {
+    resolvedRole = "ADMIN";
+    try {
+      const db = await getMongoDb();
+      await db.collection("User").updateOne(
+        { _id: new ObjectId(user.id) },
+        { $set: { role: resolvedRole } }
+      );
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to backfill user role:", error);
+      }
+    }
+  }
+
+  const { password: _password, ...sessionUser } = user;
+  return {
+    ...sessionUser,
+    role: resolvedRole,
+  };
 };
 
-export const getSessionClient = async (): Promise<User | null> => {
+export const getSessionClient = async (): Promise<SessionUser | null> => {
   try {
     const token = Cookies.get("session_id");
     // Debug log - only log in development
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV === "development") {
       console.log("Session ID from cookies:", token);
     }
     if (!token) {
@@ -95,12 +128,12 @@ export const getSessionClient = async (): Promise<User | null> => {
 
     // On client side, we'll make an API call to verify the token
     // This avoids using the JWT library on the client side
-    const response = await fetch('/api/auth/session', {
-      method: 'GET',
+    const response = await fetch("/api/auth/session", {
+      method: "GET",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
-      credentials: 'include', // Include cookies
+      credentials: "include", // Include cookies
     });
 
     if (response.ok) {
@@ -111,7 +144,7 @@ export const getSessionClient = async (): Promise<User | null> => {
     return null;
   } catch (error) {
     // Only log in development to avoid console errors in production
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV === "development") {
       console.error("Error in getSessionClient:", error);
     }
     return null;

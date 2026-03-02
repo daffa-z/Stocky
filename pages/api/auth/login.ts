@@ -3,6 +3,8 @@ import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { generateToken } from "../../../utils/auth";
 import Cookies from "cookies";
+import { ObjectId } from "mongodb";
+import { getMongoDb } from "@/utils/mongo";
 
 const prisma = new PrismaClient();
 
@@ -80,6 +82,20 @@ export default async function login(req: NextApiRequest, res: NextApiResponse) {
       return res.status(500).json({ error: "User data corrupted: id missing" });
     }
 
+    let resolvedRole = (user as any).role as string | undefined;
+    if (!resolvedRole) {
+      resolvedRole = "ADMIN";
+      try {
+        const db = await getMongoDb();
+        await db.collection("User").updateOne(
+          { _id: new ObjectId(user.id) },
+          { $set: { role: resolvedRole } }
+        );
+      } catch (roleError) {
+        console.error("Failed to backfill user role during login:", roleError);
+      }
+    }
+
     const token = generateToken(user.id);
 
     if (!token) {
@@ -107,6 +123,7 @@ export default async function login(req: NextApiRequest, res: NextApiResponse) {
       userId: user.id,
       userName: user.name,
       userEmail: user.email,
+      userRole: resolvedRole || "USER",
       sessionId: token,
     });
   } catch (error) {
