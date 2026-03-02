@@ -220,6 +220,18 @@ export default function InvoicesPage() {
     setIsConfirmDialogOpen(true);
   };
 
+  const handlePrintInvoice = () => {
+    if (!createdInvoice) {
+      window.print();
+      return;
+    }
+
+    const originalTitle = document.title;
+    document.title = createdInvoice.invoiceNumber;
+    window.print();
+    document.title = originalTitle;
+  };
+
   const finishInvoice = () => {
     setIsFinished(true);
     toast({
@@ -562,7 +574,7 @@ export default function InvoicesPage() {
                 </p>
               </div>
               <div className="flex gap-2 print:hidden">
-                <Button type="button" variant="outline" onClick={() => window.print()}>
+                <Button type="button" variant="outline" onClick={handlePrintInvoice}>
                   <Printer className="h-4 w-4 mr-2" />
                   Print / Save PDF
                 </Button>
