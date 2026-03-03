@@ -64,12 +64,37 @@ interface PurchasingDataResponse {
   }>;
 }
 
+
+
+interface MonthlySalesSummary {
+  month: string;
+  invoiceCount: number;
+  totalSales: number;
+  totalTax: number;
+  totalDiscount: number;
+}
+
+interface MonthlySalesResponse {
+  summary: {
+    invoiceCount: number;
+    totalSales: number;
+    totalTax: number;
+    totalDiscount: number;
+  };
+  monthlySales: MonthlySalesSummary[];
+}
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
     maximumFractionDigits: 0,
   }).format(value);
+
+const formatMonth = (monthKey: string) => {
+  const [year, month] = monthKey.split("-").map(Number);
+  const date = new Date(Date.UTC(year, (month || 1) - 1, 1));
+  return date.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+};
 
 export default function InvoicePurchasingPage() {
   const { toast } = useToast();
@@ -78,13 +103,18 @@ export default function InvoicePurchasingPage() {
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [monthlySalesData, setMonthlySalesData] = useState<MonthlySalesResponse | null>(null);
 
   useEffect(() => {
     const loadPurchasingData = async () => {
       try {
         setIsLoading(true);
-        const response = await axiosInstance.get("/invoices", { params: { limit: 10, page, search } });
-        setData(response.data);
+        const [invoiceResponse, monthlySalesResponse] = await Promise.all([
+          axiosInstance.get("/invoices", { params: { limit: 10, page, search } }),
+          axiosInstance.get("/invoices/monthly-sales"),
+        ]);
+        setData(invoiceResponse.data);
+        setMonthlySalesData(monthlySalesResponse.data);
       } catch (error: any) {
         toast({
           title: "Failed to load purchasing data",
@@ -103,6 +133,84 @@ export default function InvoicePurchasingPage() {
     if (!data || !selectedInvoiceId) return null;
     return data.invoices.find((invoice) => invoice.id === selectedInvoiceId) || null;
   }, [data, selectedInvoiceId]);
+
+  const downloadMonthlySalesXlsx = async () => {
+    if (!monthlySalesData?.monthlySales?.length) {
+      toast({ title: "Data kosong", description: "Belum ada data penjualan bulanan untuk diunduh." });
+      return;
+    }
+
+    const XLSX = await import("xlsx");
+    const rows = monthlySalesData.monthlySales.map((item) => ({
+      Bulan: formatMonth(item.month),
+      "Jumlah Faktur": item.invoiceCount,
+      "Total Penjualan": item.totalSales,
+      "Total Pajak": item.totalTax,
+      "Total Diskon": item.totalDiscount,
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Penjualan Bulanan");
+    XLSX.writeFile(workbook, `laporan-penjualan-bulanan-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  };
+
+  const downloadMonthlySalesPdf = () => {
+    if (!monthlySalesData?.monthlySales?.length) {
+      toast({ title: "Data kosong", description: "Belum ada data penjualan bulanan untuk diunduh." });
+      return;
+    }
+
+    const rows = monthlySalesData.monthlySales
+      .map(
+        (item) => `
+          <tr>
+            <td style="padding:8px;border:1px solid #ddd;">${formatMonth(item.month)}</td>
+            <td style="padding:8px;border:1px solid #ddd;text-align:right;">${item.invoiceCount}</td>
+            <td style="padding:8px;border:1px solid #ddd;text-align:right;">${formatCurrency(item.totalSales)}</td>
+            <td style="padding:8px;border:1px solid #ddd;text-align:right;">${formatCurrency(item.totalTax)}</td>
+            <td style="padding:8px;border:1px solid #ddd;text-align:right;">${formatCurrency(item.totalDiscount)}</td>
+          </tr>
+        `
+      )
+      .join("");
+
+    const printWindow = window.open("", "_blank", "width=1000,height=700");
+    if (!printWindow) {
+      toast({ title: "Gagal membuka jendela cetak", description: "Izinkan pop-up browser lalu coba lagi." });
+      return;
+    }
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Laporan Penjualan Bulanan</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; padding: 20px;">
+          <h2>Laporan Penjualan Bulanan</h2>
+          <p>Tanggal cetak: ${new Date().toLocaleString("id-ID")}</p>
+          <table style="border-collapse: collapse; width: 100%;">
+            <thead>
+              <tr>
+                <th style="padding:8px;border:1px solid #ddd;text-align:left;">Bulan</th>
+                <th style="padding:8px;border:1px solid #ddd;text-align:right;">Jumlah Faktur</th>
+                <th style="padding:8px;border:1px solid #ddd;text-align:right;">Total Penjualan</th>
+                <th style="padding:8px;border:1px solid #ddd;text-align:right;">Total Pajak</th>
+                <th style="padding:8px;border:1px solid #ddd;text-align:right;">Total Diskon</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
 
   const dailyTrend = useMemo(() => {
     if (!data) return [];
@@ -128,7 +236,9 @@ export default function InvoicePurchasingPage() {
             <h2 className="text-2xl font-bold">Purchasing Review from Invoice Data</h2>
             <p className="text-sm text-muted-foreground">Understand which suppliers and products are moving the fastest.</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" onClick={downloadMonthlySalesPdf}>Unduh PDF Laporan Penjualan</Button>
+            <Button type="button" onClick={downloadMonthlySalesXlsx}>Unduh XLSX Laporan Penjualan</Button>
             <Link href="/invoices/data">
               <Button variant="outline">Invoice Data</Button>
             </Link>
@@ -197,6 +307,46 @@ export default function InvoicePurchasingPage() {
               </Card>
             </div>
 
+
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Penjualan Bulanan</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b text-left">
+                        <th className="px-2 py-2">Bulan</th>
+                        <th className="px-2 py-2 text-right">Jumlah Faktur</th>
+                        <th className="px-2 py-2 text-right">Total Penjualan</th>
+                        <th className="px-2 py-2 text-right">Total Pajak</th>
+                        <th className="px-2 py-2 text-right">Total Diskon</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {monthlySalesData?.monthlySales?.map((month) => (
+                        <tr key={month.month} className="border-b">
+                          <td className="px-2 py-2">{formatMonth(month.month)}</td>
+                          <td className="px-2 py-2 text-right">{month.invoiceCount}</td>
+                          <td className="px-2 py-2 text-right">{formatCurrency(month.totalSales)}</td>
+                          <td className="px-2 py-2 text-right">{formatCurrency(month.totalTax)}</td>
+                          <td className="px-2 py-2 text-right">{formatCurrency(month.totalDiscount)}</td>
+                        </tr>
+                      ))}
+                      {!monthlySalesData?.monthlySales?.length && (
+                        <tr>
+                          <td colSpan={5} className="px-2 py-4 text-center text-muted-foreground">
+                            Belum ada data penjualan bulanan.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
 
             <Card>
               <CardContent className="pt-6">
