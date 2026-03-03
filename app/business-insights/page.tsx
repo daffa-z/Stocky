@@ -9,6 +9,7 @@ import { ForecastingCard } from "@/components/ui/forecasting-card";
 import { QRCodeComponent } from "@/components/ui/qr-code";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import axiosInstance from "@/utils/axiosInstance";
 import {
   Activity,
   AlertTriangle,
@@ -24,7 +25,7 @@ import {
   TrendingUp,
   Users,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -47,10 +48,49 @@ import { useProductStore } from "../useProductStore";
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"];
 
+
+interface SalesSummaryData {
+  periods: {
+    daily: { sales: number; profit: number; invoiceCount: number };
+    weekly: { sales: number; profit: number; invoiceCount: number };
+    monthly: { sales: number; profit: number; invoiceCount: number };
+  };
+}
+
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(value);
+
 export default function BusinessInsightsPage() {
   const { allProducts } = useProductStore();
   const { user } = useAuth();
   const { toast } = useToast();
+  const [salesSummary, setSalesSummary] = useState<SalesSummaryData | null>(null);
+  const [isSalesSummaryLoading, setIsSalesSummaryLoading] = useState(true);
+
+  useEffect(() => {
+    const loadSalesSummary = async () => {
+      if (!user) return;
+      try {
+        setIsSalesSummaryLoading(true);
+        const response = await axiosInstance.get("/business-insights/sales-summary");
+        setSalesSummary(response.data);
+      } catch (error: any) {
+        toast({
+          title: "Failed to load sales summary",
+          description: error?.response?.data?.error || "Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsSalesSummaryLoading(false);
+      }
+    };
+
+    loadSalesSummary();
+  }, [toast, user]);
 
   // Calculate analytics data with corrected calculations
   const analyticsData = useMemo(() => {
@@ -342,6 +382,53 @@ export default function BusinessInsightsPage() {
             description="Items with zero quantity"
           />
         </div>
+
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Penjualan & Ringkasan Keuntungan</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isSalesSummaryLoading ? (
+              <p className="text-sm text-muted-foreground">Loading sales summary...</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Daily</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="flex justify-between text-sm"><span>Total Penjualan</span><span className="font-semibold">{formatCurrency(salesSummary?.periods.daily.sales || 0)}</span></div>
+                    <div className="flex justify-between text-sm"><span>Ringkasan Keuntungan</span><span className="font-semibold text-emerald-600">{formatCurrency(salesSummary?.periods.daily.profit || 0)}</span></div>
+                    <div className="text-xs text-muted-foreground">Invoice: {salesSummary?.periods.daily.invoiceCount || 0}</div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Weekly</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="flex justify-between text-sm"><span>Total Penjualan</span><span className="font-semibold">{formatCurrency(salesSummary?.periods.weekly.sales || 0)}</span></div>
+                    <div className="flex justify-between text-sm"><span>Ringkasan Keuntungan</span><span className="font-semibold text-emerald-600">{formatCurrency(salesSummary?.periods.weekly.profit || 0)}</span></div>
+                    <div className="text-xs text-muted-foreground">Invoice: {salesSummary?.periods.weekly.invoiceCount || 0}</div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Monthly</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="flex justify-between text-sm"><span>Total Penjualan</span><span className="font-semibold">{formatCurrency(salesSummary?.periods.monthly.sales || 0)}</span></div>
+                    <div className="flex justify-between text-sm"><span>Ringkasan Keuntungan</span><span className="font-semibold text-emerald-600">{formatCurrency(salesSummary?.periods.monthly.profit || 0)}</span></div>
+                    <div className="text-xs text-muted-foreground">Invoice: {salesSummary?.periods.monthly.invoiceCount || 0}</div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Charts and Insights */}
         <Tabs defaultValue="overview" className="space-y-4">
