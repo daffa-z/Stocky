@@ -67,25 +67,33 @@ const formatCurrency = (value: number) =>
 
 const formatTimelineDate = (date: Date) =>
   date.toLocaleDateString("id-ID", {
-    day: "2-digit",
-    month: "short",
+    weekday: "long",
+    day: "numeric",
+    month: "long",
     year: "numeric",
   });
 
 const getPeriodTimeline = (period: "daily" | "weekly" | "monthly") => {
-  const end = new Date();
-  const start = new Date(end);
+  const now = new Date();
+  const start = new Date(now);
+  const end = new Date(now);
 
   if (period === "daily") {
     start.setHours(0, 0, 0, 0);
+    end.setHours(23, 59, 59, 999);
   } else if (period === "weekly") {
-    const day = start.getDay();
-    const diff = day === 0 ? 6 : day - 1;
-    start.setDate(start.getDate() - diff);
+    const currentDay = now.getDay(); // Sunday = 0, Saturday = 6
+    start.setDate(now.getDate() - currentDay);
     start.setHours(0, 0, 0, 0);
+
+    end.setDate(start.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
   } else {
     start.setDate(1);
     start.setHours(0, 0, 0, 0);
+
+    end.setMonth(start.getMonth() + 1, 0);
+    end.setHours(23, 59, 59, 999);
   }
 
   return `${formatTimelineDate(start)} - ${formatTimelineDate(end)}`;
