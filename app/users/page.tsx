@@ -61,7 +61,7 @@ export default function UsersPage() {
       setData(response.data);
     } catch (error: any) {
       toast({
-        title: "Failed to load users",
+        title: "Gagal memuat data pengguna",
         description: error?.response?.data?.error || "Please try again.",
         variant: "destructive",
       });
@@ -93,12 +93,12 @@ export default function UsersPage() {
         username: editForm.username,
         role: editForm.role,
       });
-      toast({ title: "User updated", description: "User data has been updated." });
+      toast({ title: "Pengguna diperbarui", description: "Data pengguna berhasil diperbarui." });
       setEditingUser(null);
       await loadUsers();
     } catch (error: any) {
       toast({
-        title: "Failed to update user",
+        title: "Gagal memperbarui pengguna",
         description: error?.response?.data?.error || "Please try again.",
         variant: "destructive",
       });
@@ -108,17 +108,17 @@ export default function UsersPage() {
   };
 
   const deleteUser = async (user: UserRecord) => {
-    const confirmed = window.confirm(`Delete user ${user.name}? This action cannot be undone.`);
+    const confirmed = window.confirm(`Hapus pengguna ${user.name}? Tindakan ini tidak dapat dibatalkan.`);
     if (!confirmed) return;
 
     try {
       setDeletingUserId(user.id);
       await axiosInstance.delete(`/users/${user.id}`);
-      toast({ title: "User deleted", description: "User has been removed." });
+      toast({ title: "Pengguna dihapus", description: "Pengguna telah dihapus." });
       await loadUsers();
     } catch (error: any) {
       toast({
-        title: "Failed to delete user",
+        title: "Gagal menghapus pengguna",
         description: error?.response?.data?.error || "Please try again.",
         variant: "destructive",
       });
@@ -132,11 +132,11 @@ export default function UsersPage() {
       <div className="space-y-6 p-4 lg:p-0">
         <Card>
           <CardHeader>
-            <CardTitle>User Data Table</CardTitle>
+            <CardTitle>Tabel Data Pengguna</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <Input
-              placeholder="Search by name, email, username, role..."
+              placeholder="Cari berdasarkan nama, email, username, peran..."
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -145,19 +145,19 @@ export default function UsersPage() {
             />
 
             {isLoading ? (
-              <p className="text-sm text-muted-foreground">Loading users...</p>
+              <p className="text-sm text-muted-foreground">Memuat data pengguna...</p>
             ) : (
               <>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Name</TableHead>
+                      <TableHead>Nama</TableHead>
                       <TableHead>Email</TableHead>
-                      <TableHead>Username</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead>Updated</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead>Nama Pengguna</TableHead>
+                      <TableHead>Peran</TableHead>
+                      <TableHead>Dibuat</TableHead>
+                      <TableHead>Diperbarui</TableHead>
+                      <TableHead>Aksi</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -181,7 +181,7 @@ export default function UsersPage() {
                               onClick={() => deleteUser(user)}
                               disabled={deletingUserId === user.id}
                             >
-                              {deletingUserId === user.id ? "Deleting..." : "Delete"}
+                              {deletingUserId === user.id ? "Menghapus..." : "Hapus"}
                             </Button>
                           </div>
                         </TableCell>
@@ -190,7 +190,7 @@ export default function UsersPage() {
                     {!data?.users.length && (
                       <TableRow>
                         <TableCell colSpan={7} className="text-center text-muted-foreground">
-                          No user data found.
+                          Tidak ada data pengguna.
                         </TableCell>
                       </TableRow>
                     )}
@@ -208,7 +208,7 @@ export default function UsersPage() {
                       disabled={!data?.pagination.hasPrev}
                       onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
                     >
-                      Previous
+                      Sebelumnya
                     </Button>
                     <Button
                       type="button"
@@ -216,7 +216,7 @@ export default function UsersPage() {
                       disabled={!data?.pagination.hasNext}
                       onClick={() => setPage((prev) => prev + 1)}
                     >
-                      Next
+                      Berikutnya
                     </Button>
                   </div>
                 </div>
@@ -228,12 +228,12 @@ export default function UsersPage() {
         <Dialog open={Boolean(editingUser)} onOpenChange={(open) => !open && setEditingUser(null)}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Edit User</DialogTitle>
+              <DialogTitle>Ubah Pengguna</DialogTitle>
             </DialogHeader>
 
             <div className="space-y-3">
               <div className="space-y-2">
-                <Label>Name</Label>
+                <Label>Nama</Label>
                 <Input
                   value={editForm.name}
                   onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))}
@@ -241,7 +241,7 @@ export default function UsersPage() {
               </div>
 
               <div className="space-y-2">
-                <Label>Username</Label>
+                <Label>Nama Pengguna</Label>
                 <Input
                   value={editForm.username}
                   onChange={(e) => setEditForm((prev) => ({ ...prev, username: e.target.value }))}
@@ -249,7 +249,7 @@ export default function UsersPage() {
               </div>
 
               <div className="space-y-2">
-                <Label>Role</Label>
+                <Label>Peran</Label>
                 <select
                   value={editForm.role}
                   onChange={(e) => setEditForm((prev) => ({ ...prev, role: e.target.value === "ADMIN" ? "ADMIN" : "USER" }))}
@@ -266,7 +266,7 @@ export default function UsersPage() {
                 Cancel
               </Button>
               <Button type="button" onClick={saveEdit} disabled={isSaving}>
-                {isSaving ? "Saving..." : "Save"}
+                {isSaving ? "Menyimpan..." : "Simpan"}
               </Button>
             </DialogFooter>
           </DialogContent>

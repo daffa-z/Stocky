@@ -23,8 +23,8 @@ export default function AppHeader() {
       await logout();
 
       toast({
-        title: "Logout Successful!",
-        description: "You have been logged out successfully.",
+        title: "Berhasil keluar!",
+        description: "Anda berhasil keluar.",
       });
 
       setTimeout(() => {
@@ -32,8 +32,8 @@ export default function AppHeader() {
       }, 1500);
     } catch (error) {
       toast({
-        title: "Logout Failed",
-        description: "Failed to logout. Please try again.",
+        title: "Gagal keluar",
+        description: "Gagal keluar. Silakan coba lagi.",
         variant: "destructive",
       });
     } finally {
@@ -56,7 +56,7 @@ export default function AppHeader() {
           <AiFillProduct className="text-3xl" />
         </div>
         <div className="text-center sm:text-left">
-          <h1 className="text-2xl font-bold">Welcome, {user?.name}!</h1>
+          <h1 className="text-2xl font-bold">Selamat datang, {user?.name}!</h1>
           <p className="text-sm">{user?.email}</p>
         </div>
       </div>
@@ -70,7 +70,7 @@ export default function AppHeader() {
           className="text-primary-foreground hover:bg-primary-dark"
         >
           <FiHome className="mr-2 h-4 w-4" />
-          Dashboard
+          Dasbor
         </Button>
         <Button
           variant="ghost"
@@ -79,7 +79,7 @@ export default function AppHeader() {
           className="text-primary-foreground hover:bg-primary-dark"
         >
           <FiBarChart className="mr-2 h-4 w-4" />
-          Business Insights
+          Wawasan Bisnis
         </Button>
         <Button
           variant="ghost"
@@ -88,7 +88,7 @@ export default function AppHeader() {
           className="text-primary-foreground hover:bg-primary-dark"
         >
           <HiOutlineReceiptTax className="mr-2 h-4 w-4" />
-          Invoices
+          Faktur
         </Button>
         <Button
           variant="ghost"
@@ -97,7 +97,7 @@ export default function AppHeader() {
           className="text-primary-foreground hover:bg-primary-dark"
         >
           <FiRepeat className="mr-2 h-4 w-4" />
-          Stock Movement
+          Pergerakan Stok
         </Button>
         <Button
           variant="ghost"
@@ -106,7 +106,7 @@ export default function AppHeader() {
           className="text-primary-foreground hover:bg-primary-dark"
         >
           <FiUsers className="mr-2 h-4 w-4" />
-          Users
+          Pengguna
         </Button>
         <Button
           variant="ghost"
@@ -115,7 +115,7 @@ export default function AppHeader() {
           className="text-primary-foreground hover:bg-primary-dark"
         >
           <FiFileText className="mr-2 h-4 w-4" />
-          API Docs
+          Dokumentasi API
         </Button>
         <Button
           variant="ghost"
@@ -124,7 +124,7 @@ export default function AppHeader() {
           className="text-primary-foreground hover:bg-primary-dark"
         >
           <FiActivity className="mr-2 h-4 w-4" />
-          API Status
+          Status API
         </Button>
 
         <ModeToggle />
@@ -133,7 +133,7 @@ export default function AppHeader() {
           disabled={isLoggingOut}
           className="h-10 px-6 bg-secondary text-secondary-foreground shadow-lg hover:shadow-xl hover:bg-secondary-dark transition-all"
         >
-          {isLoggingOut ? "Logging Out..." : "Logout"}
+          {isLoggingOut ? "Sedang keluar..." : "Keluar"}
         </Button>
       </div>
     </div>
