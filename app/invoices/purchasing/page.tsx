@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import axiosInstance from "@/utils/axiosInstance";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 
 interface InvoiceItem {
@@ -99,18 +99,21 @@ const formatMonth = (monthKey: string) => {
 export default function InvoicePurchasingPage() {
   const { toast } = useToast();
   const [data, setData] = useState<PurchasingDataResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isTableLoading, setIsTableLoading] = useState(false);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [monthlySalesData, setMonthlySalesData] = useState<MonthlySalesResponse | null>(null);
 
+  const hasInitializedTableRefresh = useRef(false);
+
   useEffect(() => {
-    const loadPurchasingData = async () => {
+    const loadInitialPurchasingData = async () => {
       try {
-        setIsLoading(true);
+        setIsInitialLoading(true);
         const [invoiceResponse, monthlySalesResponse] = await Promise.all([
-          axiosInstance.get("/invoices", { params: { limit: 10, page, search } }),
+          axiosInstance.get("/invoices", { params: { limit: 10, page: 1, search: "" } }),
           axiosInstance.get("/invoices/monthly-sales"),
         ]);
         setData(invoiceResponse.data);
@@ -122,12 +125,45 @@ export default function InvoicePurchasingPage() {
           variant: "destructive",
         });
       } finally {
-        setIsLoading(false);
+        setIsInitialLoading(false);
       }
     };
 
-    loadPurchasingData();
-  }, [toast, page, search]);
+    loadInitialPurchasingData();
+  }, [toast]);
+
+  useEffect(() => {
+    if (!hasInitializedTableRefresh.current) {
+      hasInitializedTableRefresh.current = true;
+      return;
+    }
+
+    const loadInvoiceTable = async () => {
+      try {
+        setIsTableLoading(true);
+        const invoiceResponse = await axiosInstance.get("/invoices", { params: { limit: 10, page, search } });
+        setData((prev) => {
+          if (!prev) return invoiceResponse.data;
+          return {
+            ...prev,
+            invoices: invoiceResponse.data.invoices,
+            pagination: invoiceResponse.data.pagination,
+          };
+        });
+        setSelectedInvoiceId(null);
+      } catch (error: any) {
+        toast({
+          title: "Failed to load invoice records",
+          description: error?.response?.data?.error || "Please try again in a moment.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsTableLoading(false);
+      }
+    };
+
+    loadInvoiceTable();
+  }, [page, search, toast]);
 
   const selectedInvoice = useMemo(() => {
     if (!data || !selectedInvoiceId) return null;
@@ -248,7 +284,7 @@ export default function InvoicePurchasingPage() {
           </div>
         </div>
 
-        {isLoading ? (
+        {isInitialLoading ? (
           <Card>
             <CardContent className="py-10 text-center text-sm text-muted-foreground">Loading purchasing insights...</CardContent>
           </Card>
@@ -370,7 +406,10 @@ export default function InvoicePurchasingPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Invoice Records (with Detail)</CardTitle>
+                <div className="flex items-center justify-between gap-2">
+                  <CardTitle>Invoice Records (with Detail)</CardTitle>
+                  {isTableLoading && <p className="text-xs text-muted-foreground">Refreshing table...</p>}
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
@@ -402,6 +441,13 @@ export default function InvoicePurchasingPage() {
                           </td>
                         </tr>
                       ))}
+                      {!data?.invoices.length && (
+                        <tr>
+                          <td colSpan={7} className="px-2 py-4 text-center text-muted-foreground">
+                            Tidak ada data invoice untuk ditampilkan.
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -418,7 +464,7 @@ export default function InvoicePurchasingPage() {
                   type="button"
                   variant="outline"
                   onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
-                  disabled={!data?.pagination.hasPrev}
+                  disabled={!data?.pagination.hasPrev || isTableLoading}
                 >
                   Previous
                 </Button>
@@ -426,7 +472,7 @@ export default function InvoicePurchasingPage() {
                   type="button"
                   variant="outline"
                   onClick={() => setPage((prev) => prev + 1)}
-                  disabled={!data?.pagination.hasNext}
+                  disabled={!data?.pagination.hasNext || isTableLoading}
                 >
                   Next
                 </Button>
