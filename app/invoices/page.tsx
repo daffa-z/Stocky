@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import axiosInstance from "@/utils/axiosInstance";
 import { ArrowRight, PlusCircle, Printer, Trash2 } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import Link from "next/link";
 import React, { useEffect, useMemo, useState } from "react";
@@ -77,6 +77,7 @@ export default function InvoicesPage() {
   const [createdInvoice, setCreatedInvoice] = useState<CreatedInvoice | null>(null);
   const [isFinished, setIsFinished] = useState(false);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+  const [isProductSelectorOpen, setIsProductSelectorOpen] = useState(false);
   useEffect(() => {
     loadProducts();
   }, [loadProducts]);
@@ -315,7 +316,7 @@ export default function InvoicesPage() {
             )}
             <div className="space-y-3">
               <Label>Add Product</Label>
-              <Dialog>
+              <Dialog open={isProductSelectorOpen} onOpenChange={setIsProductSelectorOpen}>
                 <DialogTrigger asChild>
                   <Button type="button" variant="outline">
                     <PlusCircle className="h-4 w-4 mr-2" />
@@ -371,6 +372,11 @@ export default function InvoicesPage() {
                     </div>
                     {!filteredProducts.length && <p className="text-sm text-muted-foreground">No products found in database for this search.</p>}
                   </div>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button type="button" variant="outline">Close</Button>
+                    </DialogClose>
+                  </DialogFooter>
                 </DialogContent>
               </Dialog>
               {!!allProducts.length && <p className="text-xs text-muted-foreground">Available products: {allProducts.length}</p>}
@@ -394,14 +400,16 @@ export default function InvoicesPage() {
                           <p className="text-xs text-muted-foreground">{selectedProduct.sku} • Stock: {selectedProduct.quantity}</p>
                         </div>
                         <div className="col-span-3">
-                          <Label>Qty</Label>
-                          <Input
-                            type="number"
-                            min={1}
-                            max={selectedProduct.quantity || 1}
-                            value={item.quantity}
-                            onChange={(e) => updateItemQuantity(item.productId, Number(e.target.value))}
-                          />
+                          <div className="flex items-center gap-2">
+                            <Label className="whitespace-nowrap">Qty</Label>
+                            <Input
+                              type="number"
+                              min={1}
+                              max={selectedProduct.quantity || 1}
+                              value={item.quantity}
+                              onChange={(e) => updateItemQuantity(item.productId, Number(e.target.value))}
+                            />
+                          </div>
                         </div>
                         <div className="col-span-2">
                           <Button
