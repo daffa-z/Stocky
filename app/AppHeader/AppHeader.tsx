@@ -1,11 +1,17 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AiFillProduct } from "react-icons/ai";
-import { FiActivity, FiBarChart, FiDollarSign, FiFileText, FiHome, FiRepeat, FiUsers } from "react-icons/fi"; // Import icons for new nav items
+import { FiActivity, FiBarChart, FiFileText, FiHome, FiUsers } from "react-icons/fi";
 import { HiOutlineReceiptTax } from "react-icons/hi";
 import { useAuth } from "../authContext";
 import { ModeToggle } from "./ModeToggle";
@@ -48,10 +54,9 @@ export default function AppHeader() {
 
   return (
     <div className="p-4 flex flex-col sm:flex-row justify-between items-center bg-primary text-primary-foreground rounded-lg shadow-md">
-      {/* Logo and Welcome Section */}
       <div className="flex items-center gap-4">
         <div
-          className={`flex aspect-square size-10 items-center justify-center rounded-lg bg-primary-dark text-primary-foreground cursor-pointer`}
+          className="flex aspect-square size-10 items-center justify-center rounded-lg bg-primary-dark text-primary-foreground cursor-pointer"
           onClick={() => handleNavigation("/")}
         >
           <AiFillProduct className="text-3xl" />
@@ -62,16 +67,10 @@ export default function AppHeader() {
         </div>
       </div>
 
-      {/* Navigation Links */}
       <div className="flex items-center space-x-2 mt-4 sm:mt-0">
         {isAdmin && (
           <>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleNavigation("/")}
-              className="text-primary-foreground hover:bg-primary-dark"
-            >
+            <Button variant="ghost" size="sm" onClick={() => handleNavigation("/")} className="text-primary-foreground hover:bg-primary-dark">
               <FiHome className="mr-2 h-4 w-4" />
               Dasbor
             </Button>
@@ -86,59 +85,37 @@ export default function AppHeader() {
             </Button>
           </>
         )}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => handleNavigation("/invoices")}
-          className="text-primary-foreground hover:bg-primary-dark"
-        >
+
+        <Button variant="ghost" size="sm" onClick={() => handleNavigation("/invoices")} className="text-primary-foreground hover:bg-primary-dark">
           <HiOutlineReceiptTax className="mr-2 h-4 w-4" />
           Faktur
         </Button>
+
         {isAdmin && (
           <>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleNavigation("/stock-movement")}
-              className="text-primary-foreground hover:bg-primary-dark"
-            >
-              <FiRepeat className="mr-2 h-4 w-4" />
-              Pergerakan Stok
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleNavigation("/users")}
-              className="text-primary-foreground hover:bg-primary-dark"
-            >
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-dark">
+                  <FiFileText className="mr-2 h-4 w-4" />
+                  Laporan
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem onClick={() => handleNavigation("/invoices/purchasing")}>Laporan Penjualan</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleNavigation("/stock-movement")}>Laporan Detail Pergerakan Stock</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleNavigation("/margin-report")}>Laporan Margin</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Button variant="ghost" size="sm" onClick={() => handleNavigation("/users")} className="text-primary-foreground hover:bg-primary-dark">
               <FiUsers className="mr-2 h-4 w-4" />
               Pengguna
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleNavigation("/margin-report")}
-              className="text-primary-foreground hover:bg-primary-dark"
-            >
-              <FiDollarSign className="mr-2 h-4 w-4" />
-              Laporan Margin
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleNavigation("/api-docs")}
-              className="text-primary-foreground hover:bg-primary-dark"
-            >
+            <Button variant="ghost" size="sm" onClick={() => handleNavigation("/api-docs")} className="text-primary-foreground hover:bg-primary-dark">
               <FiFileText className="mr-2 h-4 w-4" />
               Dokumentasi API
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleNavigation("/api-status")}
-              className="text-primary-foreground hover:bg-primary-dark"
-            >
+            <Button variant="ghost" size="sm" onClick={() => handleNavigation("/api-status")} className="text-primary-foreground hover:bg-primary-dark">
               <FiActivity className="mr-2 h-4 w-4" />
               Status API
             </Button>
