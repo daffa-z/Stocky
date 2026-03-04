@@ -21,7 +21,10 @@ export default function AppHeader() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const isAdmin = (user?.role || "USER").toUpperCase() === "ADMIN";
+  const role = (user?.role || "USER").toUpperCase();
+  const isAdmin = role === "ADMIN";
+  const isDev = role === "DEV";
+  const canAccessMainFeatures = isAdmin || isDev;
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -68,7 +71,7 @@ export default function AppHeader() {
       </div>
 
       <div className="flex items-center space-x-2 mt-4 sm:mt-0">
-        {isAdmin && (
+        {canAccessMainFeatures && (
           <>
             <Button variant="ghost" size="sm" onClick={() => handleNavigation("/")} className="text-primary-foreground hover:bg-primary-dark">
               <FiHome className="mr-2 h-4 w-4" />
@@ -91,7 +94,7 @@ export default function AppHeader() {
           Faktur
         </Button>
 
-        {isAdmin && (
+        {canAccessMainFeatures && (
           <>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -109,21 +112,25 @@ export default function AppHeader() {
 
 
             <Button variant="ghost" size="sm" onClick={() => handleNavigation("/suppliers")} className="text-primary-foreground hover:bg-primary-dark">
-              <FiUsers className="mr-2 h-4 w-4" />
+              <i className="bi bi-truck mr-2 h-4 w-4" />
               Supplier
             </Button>
             <Button variant="ghost" size="sm" onClick={() => handleNavigation("/users")} className="text-primary-foreground hover:bg-primary-dark">
               <FiUsers className="mr-2 h-4 w-4" />
               Pengguna
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => handleNavigation("/api-docs")} className="text-primary-foreground hover:bg-primary-dark">
-              <FiFileText className="mr-2 h-4 w-4" />
-              Dokumentasi API
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => handleNavigation("/api-status")} className="text-primary-foreground hover:bg-primary-dark">
-              <FiActivity className="mr-2 h-4 w-4" />
-              Status API
-            </Button>
+{isDev && (
+              <>
+                <Button variant="ghost" size="sm" onClick={() => handleNavigation("/api-docs")} className="text-primary-foreground hover:bg-primary-dark">
+                  <FiFileText className="mr-2 h-4 w-4" />
+                  Dokumentasi API
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => handleNavigation("/api-status")} className="text-primary-foreground hover:bg-primary-dark">
+                  <FiActivity className="mr-2 h-4 w-4" />
+                  Status API
+                </Button>
+              </>
+            )}
           </>
         )}
 

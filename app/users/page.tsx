@@ -37,7 +37,7 @@ interface UsersResponse {
 interface EditForm {
   name: string;
   username: string;
-  role: "ADMIN" | "USER";
+  role: "ADMIN" | "USER" | "DEV";
 }
 
 export default function UsersPage() {
@@ -79,7 +79,7 @@ export default function UsersPage() {
     setEditForm({
       name: user.name,
       username: user.username || "",
-      role: user.role === "ADMIN" ? "ADMIN" : "USER",
+      role: user.role === "ADMIN" ? "ADMIN" : user.role === "DEV" ? "DEV" : "USER",
     });
   };
 
@@ -252,11 +252,12 @@ export default function UsersPage() {
                 <Label>Peran</Label>
                 <select
                   value={editForm.role}
-                  onChange={(e) => setEditForm((prev) => ({ ...prev, role: e.target.value === "ADMIN" ? "ADMIN" : "USER" }))}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, role: e.target.value === "ADMIN" ? "ADMIN" : e.target.value === "DEV" ? "DEV" : "USER" }))}
                   className="w-full h-10 rounded-md border bg-background px-3"
                 >
                   <option value="USER">USER</option>
                   <option value="ADMIN">ADMIN</option>
+                  <option value="DEV">DEV</option>
                 </select>
               </div>
             </div>

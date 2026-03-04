@@ -19,17 +19,29 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({
   const router = useRouter();
   const pathname = usePathname();
 
-  const isAdmin = (user?.role || "USER").toUpperCase() === "ADMIN";
+  const role = (user?.role || "USER").toUpperCase();
+  const isAdmin = role === "ADMIN";
+  const isDev = role === "DEV";
+  const canAccessMainFeatures = isAdmin || isDev;
+
   const isInvoiceRoute = pathname?.startsWith("/invoices");
-  const isRestrictedForUserRole = Boolean(user) && !isAdmin && !isInvoiceRoute;
+  const isDeveloperOnlyRoute = pathname?.startsWith("/api-docs") || pathname?.startsWith("/api-status");
+
+  const isRestrictedForUserRole = Boolean(user) && !canAccessMainFeatures && !isInvoiceRoute;
+  const isRestrictedForNonDev = Boolean(user) && isDeveloperOnlyRoute && !isDev;
 
   useEffect(() => {
     if (!user) return;
 
+    if (isRestrictedForNonDev) {
+      router.replace("/");
+      return;
+    }
+
     if (isRestrictedForUserRole) {
       router.replace("/invoices");
     }
-  }, [isRestrictedForUserRole, user, router]);
+  }, [isRestrictedForNonDev, isRestrictedForUserRole, user, router]);
 
   return (
     <div className="poppins w-full min-h-screen bg-gray-50 dark:bg-[#121212]">
@@ -40,7 +52,7 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({
 
         {/* Main Content */}
         <div className="p-0 lg:p-4">
-          {isRestrictedForUserRole ? null : children}
+          {isRestrictedForUserRole || isRestrictedForNonDev ? null : children}
         </div>
       </Card>
     </div>

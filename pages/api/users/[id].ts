@@ -5,7 +5,7 @@ import { getMongoDb } from "@/utils/mongo";
 
 const normalizeRole = (role: unknown) => {
   const value = typeof role === "string" ? role.trim().toUpperCase() : "";
-  if (value === "ADMIN" || value === "USER") {
+  if (value === "ADMIN" || value === "USER" || value === "DEV") {
     return value;
   }
   return "USER";
