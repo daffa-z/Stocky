@@ -18,6 +18,8 @@ export const openAndPrintTypewriterReport = ({
     return false;
   }
 
+  const headerImageUrl = `${window.location.origin}/pdf-header-template.svg`;
+
   const headerHtml = tableHeaders
     .map(
       (header, index) =>
@@ -47,14 +49,8 @@ export const openAndPrintTypewriterReport = ({
         <title>${documentTitle}</title>
       </head>
       <body style="font-family: 'Courier New', Courier, monospace; padding: 24px; color: #111;">
-        <div style="display:flex; gap:14px; align-items:flex-start; border-bottom:1px solid #222; padding-bottom:10px; margin-bottom:14px;">
-          <div style="width:68px;height:68px;border:1px solid #222;border-radius:999px;display:flex;align-items:center;justify-content:center;font-family: 'Times New Roman', serif;font-size:12px;font-weight:700;">KWS</div>
-          <div style="font-family: 'Times New Roman', serif; line-height: 1.1;">
-            <p style="margin:0; font-size:22px; font-weight:700;">KOPERASI PEMASARAN</p>
-            <p style="margin:0; font-size:22px; font-weight:700;">DUA WIBAWA SEJAHTERA</p>
-            <p style="margin:2px 0 0; font-size:13px; font-weight:700; color:#1165a3;">NOMOR AHU-0001456.AH.01.29.TAHUN 2026</p>
-            <p style="margin:2px 0 0; font-size:12px;">Jl. Pelita I Dukuh Kaso Wetan No. 25 Desa Sarwodadi Kecamatan Comal, Kabupaten Pemalang</p>
-          </div>
+        <div style="margin-bottom: 12px;">
+          <img src="${headerImageUrl}" alt="Header Koperasi" style="width:100%; height:auto; display:block;" />
         </div>
         <h2 style="margin: 0 0 6px; text-align: center;">${reportHeading}</h2>
         <h3 style="margin: 0 0 18px; text-align: center;">Rincian Transaksi Penjualan</h3>

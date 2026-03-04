@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2048" height="357" viewBox="0 0 2048 357">
+  <rect width="2048" height="357" fill="#fff"/>
+  <circle cx="190" cy="178" r="120" fill="#f5f5f5" stroke="#000" stroke-width="5"/>
+  <circle cx="190" cy="178" r="72" fill="#eaf6ea" stroke="#888" stroke-width="3"/>
+  <text x="145" y="190" font-size="42" font-family="Arial, sans-serif" font-weight="700">KWS</text>
+
+  <text x="330" y="94" font-size="72" font-family="Times New Roman, serif" font-weight="700">KOPERASI PEMASARAN</text>
+  <text x="330" y="170" font-size="72" font-family="Times New Roman, serif" font-weight="700">DUA WIBAWA SEJAHTERA</text>
+  <text x="330" y="242" font-size="60" font-family="Times New Roman, serif" font-weight="700" fill="#1165a3">NOMOR AHU-0001456.AH.01.29.TAHUN 2026</text>
+  <text x="330" y="304" font-size="56" font-family="Times New Roman, serif">Jl. Pelita I Dukuh Kaso Wetan No. 25 Desa Sarwodadi Kecamatan Comal, Kabupaten Pemalang</text>
+
+  <line x1="40" y1="334" x2="2008" y2="334" stroke="#000" stroke-width="3"/>
+</svg>
