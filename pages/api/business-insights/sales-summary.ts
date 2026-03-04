@@ -45,7 +45,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const invoiceCollection = db.collection("invoices");
     const productCollection = db.collection("Product");
 
-    const products = await productCollection.find({ userId: session.id }).toArray();
+    const products = await productCollection.find({}).toArray();
     const buyPriceByProductId = new Map<string, number>(
       products.map((product: any) => [String(product._id), toNumber(product.buyPrice, 0)])
     );

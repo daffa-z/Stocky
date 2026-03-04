@@ -91,8 +91,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const db = client.db(dbName);
         const invoiceCollection = db.collection("invoices");
 
-        const analyticsQuery: any = { userId };
-        const recentInvoiceQuery: any = { userId };
+        const analyticsQuery: any = {};
+        const recentInvoiceQuery: any = {};
 
         if (search) {
           recentInvoiceQuery.$or = [
@@ -251,7 +251,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(400).json({ error: "One or more products were not found" });
       }
 
-      const products = await productCollection.find({ _id: { $in: productObjectIds as ObjectId[] }, userId }).toArray();
+      const products = await productCollection.find({ _id: { $in: productObjectIds as ObjectId[] } }).toArray();
 
       if (products.length !== uniqueProductIds.length) {
         return res.status(400).json({ error: "One or more products were not found" });
@@ -311,7 +311,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await Promise.all(
         preparedItems.map((item) =>
           productCollection.updateOne(
-            { _id: new ObjectId(item.productId), userId },
+            { _id: new ObjectId(item.productId) },
             {
               $set: {
                 quantity: item.remainingQuantity,

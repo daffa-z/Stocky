@@ -67,7 +67,7 @@ export default async function handler(
     case "GET":
       try {
         const suppliers = await prisma.supplier.findMany({
-          where: { userId },
+          where: {},
           orderBy: { name: "asc" },
         });
         res.status(200).json(suppliers);

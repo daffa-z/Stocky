@@ -154,7 +154,7 @@ export default async function handler(
     case "GET":
       try {
         const collection = await getProductsCollection();
-        const products = await collection.find({ userId }).toArray();
+        const products = await collection.find({}).toArray();
 
         const transformedProducts = await Promise.all(
           products.map(async (product: any) => {
@@ -170,7 +170,7 @@ export default async function handler(
 
             if (typeof existingMargin !== "number") {
               await collection.updateOne(
-                { _id: product._id, userId },
+                { _id: product._id },
                 {
                   $set: {
                     minimumMarginPercent,
@@ -241,7 +241,7 @@ export default async function handler(
           return res.status(400).json({ error: "Harga jual tidak boleh melebihi HET" });
         }
 
-        const previousProduct: any = await collection.findOne({ _id: new ObjectId(id), userId });
+        const previousProduct: any = await collection.findOne({ _id: new ObjectId(id) });
         if (!previousProduct) {
           return res.status(404).json({ error: "Product not found" });
         }
@@ -249,7 +249,7 @@ export default async function handler(
         const nextQuantity = toNumber(quantity, 0);
 
         await collection.updateOne(
-          { _id: new ObjectId(id), userId },
+          { _id: new ObjectId(id) },
           {
             $set: {
               name,
@@ -268,7 +268,7 @@ export default async function handler(
           }
         );
 
-        const updatedProduct = await collection.findOne({ _id: new ObjectId(id), userId });
+        const updatedProduct = await collection.findOne({ _id: new ObjectId(id) });
         const categoryName = await findCategoryNameById(categoryId);
         const supplierName = await findSupplierNameById(supplierId);
 

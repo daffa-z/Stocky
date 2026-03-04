@@ -35,7 +35,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const db = client.db(dbName);
       const invoiceCollection = db.collection("invoices");
 
-      const invoices = await invoiceCollection.find({ userId }).sort({ createdAt: -1 }).toArray();
+      const invoices = await invoiceCollection.find({}).sort({ createdAt: -1 }).toArray();
 
       const monthlyMap = invoices.reduce(
         (acc, invoice: any) => {

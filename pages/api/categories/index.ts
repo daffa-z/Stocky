@@ -47,7 +47,7 @@ export default async function handler(
     case "GET":
       try {
         const categories = await prisma.category.findMany({
-          where: { userId },
+          where: {},
         });
         res.status(200).json(categories);
       } catch (error) {

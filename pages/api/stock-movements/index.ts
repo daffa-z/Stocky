@@ -44,7 +44,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const db = client.db(dbName);
         const collection = db.collection("stock_movements");
 
-        const query: any = { userId };
+        const query: any = {};
         if (search) {
           query.$or = [
             { productName: { $regex: search, $options: "i" } },
@@ -142,7 +142,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const productCollection = db.collection("Product");
       const movementCollection = db.collection("stock_movements");
 
-      const product = await productCollection.findOne({ _id: new ObjectId(productId), userId });
+      const product = await productCollection.findOne({ _id: new ObjectId(productId) });
       if (!product) {
         return res.status(404).json({ error: "Product not found" });
       }
@@ -160,7 +160,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ]);
 
       await productCollection.updateOne(
-        { _id: new ObjectId(productId), userId },
+        { _id: new ObjectId(productId) },
         {
           $set: {
             quantity: stockAfter,
