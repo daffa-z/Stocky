@@ -9,6 +9,7 @@ import { ForecastingCard } from "@/components/ui/forecasting-card";
 import { QRCodeComponent } from "@/components/ui/qr-code";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import axiosInstance from "@/utils/axiosInstance";
 import {
   Activity,
   AlertTriangle,
@@ -24,7 +25,7 @@ import {
   TrendingUp,
   Users,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -47,10 +48,84 @@ import { useProductStore } from "../useProductStore";
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"];
 
+
+interface SalesSummaryData {
+  periods: {
+    daily: { sales: number; profit: number; invoiceCount: number };
+    weekly: { sales: number; profit: number; invoiceCount: number };
+    monthly: { sales: number; profit: number; invoiceCount: number };
+  };
+}
+
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(value);
+
+
+const formatTimelineDate = (date: Date) =>
+  date.toLocaleDateString("id-ID", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+const getPeriodTimeline = (period: "daily" | "weekly" | "monthly") => {
+  const now = new Date();
+  const start = new Date(now);
+  const end = new Date(now);
+
+  if (period === "daily") {
+    start.setHours(0, 0, 0, 0);
+    end.setHours(23, 59, 59, 999);
+  } else if (period === "weekly") {
+    const currentDay = now.getDay(); // Sunday = 0, Saturday = 6
+    start.setDate(now.getDate() - currentDay);
+    start.setHours(0, 0, 0, 0);
+
+    end.setDate(start.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
+  } else {
+    start.setDate(1);
+    start.setHours(0, 0, 0, 0);
+
+    end.setMonth(start.getMonth() + 1, 0);
+    end.setHours(23, 59, 59, 999);
+  }
+
+  return `${formatTimelineDate(start)} - ${formatTimelineDate(end)}`;
+};
+
 export default function BusinessInsightsPage() {
   const { allProducts } = useProductStore();
   const { user } = useAuth();
   const { toast } = useToast();
+  const [salesSummary, setSalesSummary] = useState<SalesSummaryData | null>(null);
+  const [isSalesSummaryLoading, setIsSalesSummaryLoading] = useState(true);
+
+  useEffect(() => {
+    const loadSalesSummary = async () => {
+      if (!user) return;
+      try {
+        setIsSalesSummaryLoading(true);
+        const response = await axiosInstance.get("/business-insights/sales-summary");
+        setSalesSummary(response.data);
+      } catch (error: any) {
+        toast({
+          title: "Failed to load sales summary",
+          description: error?.response?.data?.error || "Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsSalesSummaryLoading(false);
+      }
+    };
+
+    loadSalesSummary();
+  }, [toast, user]);
 
   // Calculate analytics data with corrected calculations
   const analyticsData = useMemo(() => {
@@ -270,8 +345,8 @@ export default function BusinessInsightsPage() {
 
   const handleExportAnalytics = () => {
     toast({
-      title: "Analytics Export",
-      description: "Analytics export feature coming soon!",
+      title: "Ekspor Analitik",
+      description: "Fitur ekspor analitik akan segera hadir!",
     });
   };
 
@@ -281,7 +356,7 @@ export default function BusinessInsightsPage() {
         <div className="container mx-auto p-6">
           <div className="flex items-center justify-center h-64">
             <p className="text-muted-foreground">
-              Please log in to view business insights.
+              Silakan masuk untuk melihat wawasan bisnis.
             </p>
           </div>
         </div>
@@ -296,10 +371,10 @@ export default function BusinessInsightsPage() {
         <div className="flex items-center justify-between">
           <div className="space-y-2">
             <h1 className="text-4xl font-bold text-primary">
-              Business Insights
+              Wawasan Bisnis
             </h1>
             <p className="text-lg text-muted-foreground">
-              Comprehensive insights into your inventory performance
+              Wawasan menyeluruh terhadap performa inventaris Anda
             </p>
           </div>
           <Button
@@ -307,55 +382,105 @@ export default function BusinessInsightsPage() {
             className="flex items-center gap-2"
           >
             <Download className="h-4 w-4" />
-            Export Analytics
+            Ekspor Analitik
           </Button>
         </div>
 
         {/* Key Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <AnalyticsCard
-            title="Total Products"
+            title="Total Produk"
             value={analyticsData.totalProducts}
             icon={Package}
             iconColor="text-blue-600"
-            description="Products in inventory"
+            description="Produk dalam inventaris"
           />
           <AnalyticsCard
-            title="Total Value"
+            title="Total Nilai"
             value={`$${analyticsData.totalValue.toLocaleString()}`}
             icon={DollarSign}
             iconColor="text-green-600"
-            description="Total inventory value"
+            description="Total nilai inventaris"
           />
           <AnalyticsCard
-            title="Low Stock Items"
+            title="Stok Menipis"
             value={analyticsData.lowStockItems}
             icon={AlertTriangle}
             iconColor="text-orange-600"
-            description="Items with quantity <= 20"
+            description="Item dengan kuantitas <= 20"
           />
           <AnalyticsCard
-            title="Out of Stock"
+            title="Stok Habis"
             value={analyticsData.outOfStockItems}
             icon={ShoppingCart}
             iconColor="text-red-600"
-            description="Items with zero quantity"
+            description="Item dengan kuantitas 0"
           />
         </div>
+
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Penjualan & Ringkasan Keuntungan</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isSalesSummaryLoading ? (
+              <p className="text-sm text-muted-foreground">Memuat ringkasan penjualan...</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Daily</CardTitle>
+                    <p className="text-xs text-muted-foreground">Rentang Waktu: {getPeriodTimeline("daily")}</p>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="flex justify-between text-sm"><span>Total Penjualan</span><span className="font-semibold">{formatCurrency(salesSummary?.periods.daily.sales || 0)}</span></div>
+                    <div className="flex justify-between text-sm"><span>Ringkasan Keuntungan</span><span className="font-semibold text-emerald-600">{formatCurrency(salesSummary?.periods.daily.profit || 0)}</span></div>
+                    <div className="text-xs text-muted-foreground">Invoice: {salesSummary?.periods.daily.invoiceCount || 0}</div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Weekly</CardTitle>
+                    <p className="text-xs text-muted-foreground">Rentang Waktu: {getPeriodTimeline("weekly")}</p>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="flex justify-between text-sm"><span>Total Penjualan</span><span className="font-semibold">{formatCurrency(salesSummary?.periods.weekly.sales || 0)}</span></div>
+                    <div className="flex justify-between text-sm"><span>Ringkasan Keuntungan</span><span className="font-semibold text-emerald-600">{formatCurrency(salesSummary?.periods.weekly.profit || 0)}</span></div>
+                    <div className="text-xs text-muted-foreground">Invoice: {salesSummary?.periods.weekly.invoiceCount || 0}</div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Monthly</CardTitle>
+                    <p className="text-xs text-muted-foreground">Rentang Waktu: {getPeriodTimeline("monthly")}</p>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="flex justify-between text-sm"><span>Total Penjualan</span><span className="font-semibold">{formatCurrency(salesSummary?.periods.monthly.sales || 0)}</span></div>
+                    <div className="flex justify-between text-sm"><span>Ringkasan Keuntungan</span><span className="font-semibold text-emerald-600">{formatCurrency(salesSummary?.periods.monthly.profit || 0)}</span></div>
+                    <div className="text-xs text-muted-foreground">Invoice: {salesSummary?.periods.monthly.invoiceCount || 0}</div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Charts and Insights */}
         <Tabs defaultValue="overview" className="space-y-4">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="distribution">Distribution</TabsTrigger>
-            <TabsTrigger value="trends">Trends</TabsTrigger>
-            <TabsTrigger value="alerts">Alerts</TabsTrigger>
+            <TabsTrigger value="overview">Ringkasan</TabsTrigger>
+            <TabsTrigger value="distribution">Distribusi</TabsTrigger>
+            <TabsTrigger value="trends">Tren</TabsTrigger>
+            <TabsTrigger value="alerts">Peringatan</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Category Distribution */}
-              <ChartCard title="Category Distribution" icon={PieChartIcon}>
+              <ChartCard title="Distribusi Kategori" icon={PieChartIcon}>
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
@@ -386,7 +511,7 @@ export default function BusinessInsightsPage() {
 
               {/* Monthly Trend - Full Year */}
               <ChartCard
-                title="Product Growth Trend (Full Year)"
+                title="Tren Pertumbuhan Produk (Satu Tahun)"
                 icon={TrendingUp}
               >
                 <ResponsiveContainer width="100%" height={300}>
@@ -410,7 +535,7 @@ export default function BusinessInsightsPage() {
           <TabsContent value="distribution" className="space-y-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Status Distribution */}
-              <ChartCard title="Status Distribution" icon={Activity}>
+              <ChartCard title="Distribusi Status" icon={Activity}>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={analyticsData.statusDistribution}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -423,7 +548,7 @@ export default function BusinessInsightsPage() {
               </ChartCard>
 
               {/* Price Range Distribution */}
-              <ChartCard title="Price Range Distribution" icon={BarChart3}>
+              <ChartCard title="Distribusi Rentang Harga" icon={BarChart3}>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={analyticsData.priceRangeDistribution}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -440,7 +565,7 @@ export default function BusinessInsightsPage() {
           <TabsContent value="trends" className="space-y-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Top Products by Value */}
-              <ChartCard title="Top Products by Value" icon={TrendingUp}>
+              <ChartCard title="Produk Teratas Berdasarkan Nilai" icon={TrendingUp}>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart
                     data={analyticsData.topProducts}
@@ -462,7 +587,7 @@ export default function BusinessInsightsPage() {
               </ChartCard>
 
               {/* Monthly Product Addition Trend */}
-              <ChartCard title="Monthly Product Addition" icon={TrendingDown}>
+              <ChartCard title="Penambahan Produk Bulanan" icon={TrendingDown}>
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={analyticsData.monthlyTrend}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -483,7 +608,7 @@ export default function BusinessInsightsPage() {
 
           <TabsContent value="alerts" className="space-y-4">
             {/* Low Stock Alerts */}
-            <ChartCard title="Low Stock Alerts" icon={AlertTriangle}>
+            <ChartCard title="Peringatan Stok Menipis" icon={AlertTriangle}>
               <div className="space-y-4">
                 {analyticsData.lowStockProducts.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -503,7 +628,7 @@ export default function BusinessInsightsPage() {
                               </p>
                             </div>
                             <Badge variant="destructive" className="text-xs">
-                              {product.quantity} left
+                              {product.quantity} tersisa
                             </Badge>
                           </div>
                         </CardContent>
@@ -514,7 +639,7 @@ export default function BusinessInsightsPage() {
                   <div className="text-center py-8">
                     <AlertTriangle className="h-12 w-12 text-green-500 mx-auto mb-4" />
                     <p className="text-muted-foreground">
-                      No low stock alerts at the moment!
+                      Tidak ada peringatan stok menipis saat ini!
                     </p>
                   </div>
                 )}
@@ -529,24 +654,24 @@ export default function BusinessInsightsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Eye className="h-5 w-5" />
-                Quick Insights
+                Wawasan Cepat
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-sm">Average Price</span>
+                <span className="text-sm">Harga Rata-rata</span>
                 <span className="font-semibold">
                   ${analyticsData.averagePrice.toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm">Total Quantity</span>
+                <span className="text-sm">Total Kuantitas</span>
                 <span className="font-semibold">
                   {analyticsData.totalQuantity.toLocaleString()}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm">Stock Utilization</span>
+                <span className="text-sm">Utilisasi Stok</span>
                 <span className="font-semibold">
                   {analyticsData.stockUtilization.toFixed(1)}%
                 </span>
@@ -558,30 +683,30 @@ export default function BusinessInsightsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
-                Performance
+                Performa
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-sm">Inventory Health</span>
+                <span className="text-sm">Kesehatan Inventaris</span>
                 <Badge
                   variant={
                     analyticsData.lowStockItems > 5 ? "destructive" : "default"
                   }
                 >
                   {analyticsData.lowStockItems > 5
-                    ? "Needs Attention"
-                    : "Healthy"}
+                    ? "Perlu Perhatian"
+                    : "Sehat"}
                 </Badge>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm">Stock Coverage</span>
+                <span className="text-sm">Cakupan Stok</span>
                 <span className="font-semibold">
                   {analyticsData.stockCoverage.toFixed(1)} units avg
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm">Value Density</span>
+                <span className="text-sm">Kepadatan Nilai</span>
                 <span className="font-semibold">
                   ${analyticsData.valueDensity.toFixed(2)} per product
                 </span>
@@ -593,13 +718,13 @@ export default function BusinessInsightsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <QrCode className="h-5 w-5" />
-                Quick QR Code
+                Kode QR Cepat
               </CardTitle>
             </CardHeader>
             <CardContent>
               <QRCodeComponent
                 data={`${window.location.origin}/business-insights`}
-                title="Dashboard QR"
+                title="QR Dasbor"
                 size={120}
                 showDownload={false}
               />

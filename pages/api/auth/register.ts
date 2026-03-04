@@ -10,6 +10,7 @@ const registerSchema = z.object({
   name: z.string().min(1),
   email: z.string().email(),
   password: z.string().min(6),
+  role: z.enum(["USER", "ADMIN", "DEV"]).optional().default("USER"),
 });
 
 export default async function handler(
@@ -21,7 +22,7 @@ export default async function handler(
   }
 
   try {
-    const { name, email, password } = registerSchema.parse(req.body);
+    const { name, email, password, role } = registerSchema.parse(req.body);
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
@@ -45,6 +46,7 @@ export default async function handler(
         username,
         createdAt: new Date(),
         updatedAt: new Date(),
+        role,
       },
     });
 
@@ -53,11 +55,12 @@ export default async function handler(
       name: newUser.name,
       email: newUser.email,
       username: newUser.username,
+      role: newUser.role,
     });
   } catch (error) {
     if (isReplicaSetTransactionError(error)) {
       try {
-        const { name, email, password } = registerSchema.parse(req.body);
+        const { name, email, password, role } = registerSchema.parse(req.body);
         const db = await getMongoDb();
         const users = db.collection("User");
 
@@ -83,6 +86,7 @@ export default async function handler(
           username,
           createdAt: now,
           updatedAt: now,
+          role,
         });
 
         return res.status(201).json({
@@ -90,6 +94,7 @@ export default async function handler(
           name,
           email,
           username,
+          role,
         });
       } catch (mongoError) {
         console.error("Register fallback error:", mongoError);

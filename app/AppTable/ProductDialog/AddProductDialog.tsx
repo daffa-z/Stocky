@@ -41,6 +41,8 @@ const ProductSchema = z.object({
   unit: z.string().min(1, "Satuan wajib diisi"),
   buyPrice: z.number().nonnegative("Harga beli tidak boleh negatif"),
   sellPrice: z.number().nonnegative("Harga jual tidak boleh negatif"),
+  hetPrice: z.number().nonnegative("HET tidak boleh negatif"),
+  minimumMarginPercent: z.number().min(0, "Margin minimum tidak boleh negatif"),
 });
 
 interface ProductFormData {
@@ -50,6 +52,8 @@ interface ProductFormData {
   unit: string;
   buyPrice: number;
   sellPrice: number;
+  hetPrice: number;
+  minimumMarginPercent: number;
 }
 
 interface AddProductDialogProps {
@@ -70,6 +74,8 @@ export default function AddProductDialog({
       unit: "pcs",
       buyPrice: 0,
       sellPrice: 0,
+      hetPrice: 0,
+      minimumMarginPercent: 10,
     },
   });
 
@@ -103,6 +109,8 @@ export default function AddProductDialog({
         unit: selectedProduct.unit || "pcs",
         buyPrice: selectedProduct.buyPrice ?? selectedProduct.price,
         sellPrice: selectedProduct.sellPrice ?? selectedProduct.price,
+        hetPrice: selectedProduct.hetPrice ?? selectedProduct.sellPrice ?? selectedProduct.price,
+        minimumMarginPercent: selectedProduct.minimumMarginPercent ?? 10,
       });
       setSelectedCategory(selectedProduct.categoryId || "");
       setSelectedSupplier(selectedProduct.supplierId || "");
@@ -115,6 +123,8 @@ export default function AddProductDialog({
         unit: "pcs",
         buyPrice: 0,
         sellPrice: 0,
+        hetPrice: 0,
+        minimumMarginPercent: 10,
       });
       setSelectedCategory("");
       setSelectedSupplier("");
@@ -140,6 +150,8 @@ export default function AddProductDialog({
           price: data.sellPrice,
           buyPrice: data.buyPrice,
           sellPrice: data.sellPrice,
+          hetPrice: data.hetPrice,
+          minimumMarginPercent: data.minimumMarginPercent,
           unit: data.unit,
           quantity: data.quantity,
           sku: data.sku,
@@ -175,6 +187,8 @@ export default function AddProductDialog({
           price: data.sellPrice,
           buyPrice: data.buyPrice,
           sellPrice: data.sellPrice,
+          hetPrice: data.hetPrice,
+          minimumMarginPercent: data.minimumMarginPercent,
           unit: data.unit,
           quantity: data.quantity,
           sku: data.sku,
@@ -254,6 +268,16 @@ export default function AddProductDialog({
                 fieldName="sellPrice"
                 label="Harga Jual"
                 placeholder="Harga jual..."
+              />
+              <Price
+                fieldName="hetPrice"
+                label="HET (Harga Eceran Tertinggi)"
+                placeholder="HET..."
+              />
+              <Price
+                fieldName="minimumMarginPercent"
+                label="Margin Minimum (%)"
+                placeholder="Default 10"
               />
               <div>
                 <label htmlFor="category" className="block text-sm font-medium">

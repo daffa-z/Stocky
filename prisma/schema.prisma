@@ -96,6 +96,7 @@ model User {
   email     String    @unique
   name      String
   password  String
+  role      String    @default("USER")
   updatedAt DateTime? @db.Date
   username  String?   @unique
 }

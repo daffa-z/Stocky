@@ -5,6 +5,8 @@ export interface Product {
   price: number;
   buyPrice?: number;
   sellPrice?: number;
+  hetPrice?: number;
+  minimumMarginPercent?: number;
   unit?: string;
   quantity: number;
   status?: string;

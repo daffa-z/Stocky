@@ -17,7 +17,6 @@ import { StatusDropDown } from "./AppTable/dropdowns/StatusDropDown";
 import { SuppliersDropDown } from "./AppTable/dropdowns/SupplierDropDown";
 import AddCategoryDialog from "./AppTable/ProductDialog/AddCategoryDialog";
 import AddProductDialog from "./AppTable/ProductDialog/AddProductDialog";
-import AddSupplierDialog from "./AppTable/ProductDialog/AddSupplierDialog";
 import PaginationSelection, {
   PaginationType,
 } from "./Products/PaginationSelection";
@@ -253,7 +252,6 @@ export default function FiltersAndActions({
         <div className="flex gap-4">
           <AddProductDialog allProducts={allProducts} userId={userId} />
           <AddCategoryDialog />
-          <AddSupplierDialog />
         </div>
 
         {/* Pagination Selection */}
@@ -287,7 +285,6 @@ export default function FiltersAndActions({
         <div className="flex flex-col gap-4">
           <AddProductDialog allProducts={allProducts} userId={userId} />
           <AddCategoryDialog />
-          <AddSupplierDialog />
         </div>
 
         {/* Filter Buttons */}

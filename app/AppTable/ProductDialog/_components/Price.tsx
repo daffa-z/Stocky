@@ -7,7 +7,7 @@ import { NumericFormat } from "react-number-format";
 import { useFormContext, Controller } from "react-hook-form";
 
 interface PriceProps {
-  fieldName: "buyPrice" | "sellPrice";
+  fieldName: "buyPrice" | "sellPrice" | "hetPrice" | "minimumMarginPercent";
   label: string;
   placeholder: string;
 }
