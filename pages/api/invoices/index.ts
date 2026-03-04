@@ -22,6 +22,40 @@ const getStatusByQuantity = (quantity: number) => {
   return "Stock Out";
 };
 
+type NormalizedInvoiceItem = {
+  productId: string;
+  name: string;
+  sku: string;
+  supplier: string;
+  price: number;
+  quantity: number;
+  lineTotal: number;
+};
+
+type NormalizedInvoice = {
+  id: string;
+  invoiceNumber: string;
+  customerName: string;
+  totalAmount: number;
+  discountType: "percentage" | "fixed";
+  discountValue: number;
+  discountAmount: number;
+  promoCode: string;
+  taxRate: number;
+  taxAmount: number;
+  grandTotal: number;
+  amountPaid: number;
+  changeAmount: number;
+  paymentMethod: string;
+  bankName: string;
+  createdByUserId: string;
+  createdByName: string;
+  createdByEmail: string;
+  keterangan: string;
+  createdAt: string;
+  items: NormalizedInvoiceItem[];
+};
+
 const createInvoiceNumber = () => {
   const now = new Date();
   const datePart = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
@@ -30,7 +64,7 @@ const createInvoiceNumber = () => {
 };
 
 
-const normalizeInvoice = (invoice: any) => ({
+const normalizeInvoice = (invoice: any): NormalizedInvoice => ({
   id: String(invoice._id),
   invoiceNumber: invoice.invoiceNumber,
   customerName: invoice.customerName,
@@ -52,7 +86,7 @@ const normalizeInvoice = (invoice: any) => ({
   keterangan: invoice.keterangan,
   createdAt: new Date(invoice.createdAt).toISOString(),
   items: Array.isArray(invoice.items)
-    ? invoice.items.map((item: any) => ({
+    ? invoice.items.map((item: any): NormalizedInvoiceItem => ({
         productId: item.productId,
         name: item.name,
         sku: item.sku,
@@ -120,7 +154,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             acc.revenue += invoice.grandTotal;
             acc.taxCollected += invoice.taxAmount;
             acc.invoiceCount += 1;
-            acc.itemsSold += invoice.items.reduce((sum, item) => sum + item.quantity, 0);
+            acc.itemsSold += invoice.items.reduce((sum: number, item: { quantity: number }) => sum + item.quantity, 0);
             acc.totalDiscount += invoice.discountAmount;
             return acc;
           },
