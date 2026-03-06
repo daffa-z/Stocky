@@ -11,6 +11,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret";
 
 type SessionUser = Omit<PrismaUser, "password"> & {
   role?: string;
+  lokasi?: string;
 };
 
 // Check if we're on the server side
@@ -95,9 +96,14 @@ export const getSessionServer = async (
   }
 
   const { password: _password, ...sessionUser } = user;
+  const resolvedLokasi = typeof (user as any).lokasi === "string" && (user as any).lokasi.trim()
+    ? (user as any).lokasi.trim()
+    : "PUSAT";
+
   return {
     ...sessionUser,
     role: resolvedRole,
+    lokasi: resolvedLokasi,
   };
 };
 

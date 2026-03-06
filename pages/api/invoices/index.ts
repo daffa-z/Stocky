@@ -105,6 +105,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const userId = session.id;
+  const lokasi = typeof (session as any).lokasi === "string" && (session as any).lokasi.trim()
+    ? (session as any).lokasi.trim()
+    : "PUSAT";
 
   if (req.method === "GET") {
     const limit = Math.min(Math.max(Number(req.query.limit) || 10, 1), 100);
@@ -125,8 +128,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const db = client.db(dbName);
         const invoiceCollection = db.collection("invoices");
 
-        const analyticsQuery: any = {};
-        const recentInvoiceQuery: any = {};
+        const analyticsQuery: any = { lokasi };
+        const recentInvoiceQuery: any = { lokasi };
 
         if (search) {
           recentInvoiceQuery.$or = [
@@ -285,7 +288,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(400).json({ error: "One or more products were not found" });
       }
 
-      const products = await productCollection.find({ _id: { $in: productObjectIds as ObjectId[] } }).toArray();
+      const products = await productCollection.find({ _id: { $in: productObjectIds as ObjectId[] }, lokasi }).toArray();
 
       if (products.length !== uniqueProductIds.length) {
         return res.status(400).json({ error: "One or more products were not found" });
@@ -297,7 +300,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const suppliers = await prisma.supplier.findMany({
         where: {
           id: { in: supplierIds },
-          userId,
         },
       });
       const supplierById = new Map(suppliers.map((supplier) => [supplier.id, supplier.name]));
@@ -306,7 +308,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const categories = await prisma.category.findMany({
         where: {
           id: { in: categoryIds },
-          userId,
         },
       });
       const categoryById = new Map(categories.map((category) => [category.id, category.name]));
@@ -345,7 +346,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await Promise.all(
         preparedItems.map((item) =>
           productCollection.updateOne(
-            { _id: new ObjectId(item.productId) },
+            { _id: new ObjectId(item.productId), lokasi },
             {
               $set: {
                 quantity: item.remainingQuantity,
@@ -378,6 +379,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const invoiceDocument = {
         invoiceNumber,
         userId,
+        lokasi,
         createdByUserId: session.id,
         createdByName: session.name || "admin",
         createdByEmail: session.email || "",
@@ -404,6 +406,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await db.collection("stock_movements").insertMany(
         preparedItems.map((item) => ({
           userId,
+          lokasi,
           createdByUserId: session.id,
           createdByName: session.name || "admin",
           createdByEmail: session.email || "",

@@ -96,6 +96,21 @@ export default async function login(req: NextApiRequest, res: NextApiResponse) {
       }
     }
 
+    const resolvedLokasi = typeof (user as any).lokasi === "string" && (user as any).lokasi.trim()
+      ? (user as any).lokasi.trim()
+      : "PUSAT";
+    if (!(user as any).lokasi) {
+      try {
+        const db = await getMongoDb();
+        await db.collection("User").updateOne(
+          { _id: new ObjectId(user.id) },
+          { $set: { lokasi: resolvedLokasi } }
+        );
+      } catch (lokasiError) {
+        console.error("Failed to backfill user lokasi during login:", lokasiError);
+      }
+    }
+
     const token = generateToken(user.id);
 
     if (!token) {
@@ -124,6 +139,7 @@ export default async function login(req: NextApiRequest, res: NextApiResponse) {
       userName: user.name,
       userEmail: user.email,
       userRole: resolvedRole || "USER",
+      userLokasi: resolvedLokasi,
       sessionId: token,
     });
   } catch (error) {

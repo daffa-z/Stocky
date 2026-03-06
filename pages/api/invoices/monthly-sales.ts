@@ -19,7 +19,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  const userId = session.id;
+  const lokasi = typeof (session as any).lokasi === "string" && (session as any).lokasi.trim()
+    ? (session as any).lokasi.trim()
+    : "PUSAT";
 
   try {
     const mongoUri = process.env.DATABASE_URL;
@@ -35,7 +37,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const db = client.db(dbName);
       const invoiceCollection = db.collection("invoices");
 
-      const invoices = await invoiceCollection.find({}).sort({ createdAt: -1 }).toArray();
+      const invoices = await invoiceCollection.find({ lokasi }).sort({ createdAt: -1 }).toArray();
 
       const monthlyMap = invoices.reduce(
         (acc, invoice: any) => {

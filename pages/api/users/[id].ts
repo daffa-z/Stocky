@@ -9,6 +9,7 @@ type UserDocument = {
   email?: string;
   username?: string;
   role?: string;
+  lokasi?: string;
   createdAt?: Date;
   updatedAt?: Date;
 };
@@ -36,10 +37,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const usersCollection = db.collection<UserDocument>("User");
 
     if (req.method === "PUT") {
-      const { name, username, role } = req.body as {
+      const { name, username, role, lokasi } = req.body as {
         name?: string;
         username?: string;
         role?: string;
+        lokasi?: string;
       };
 
       const updateData: Record<string, unknown> = {
@@ -71,6 +73,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         updateData.role = normalizeRole(role);
       }
 
+      if (typeof lokasi === "string") {
+        const trimmedLokasi = lokasi.trim();
+        if (!trimmedLokasi) {
+          return res.status(400).json({ error: "Lokasi is required" });
+        }
+        updateData.lokasi = trimmedLokasi;
+      }
+
       const result = await usersCollection.findOneAndUpdate(
         { _id: new ObjectId(id) },
         { $set: updateData },
@@ -88,6 +98,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         email: updatedUser.email || "",
         username: updatedUser.username || "",
         role: updatedUser.role || "USER",
+        lokasi: (updatedUser as any).lokasi || "PUSAT",
         createdAt: updatedUser.createdAt,
         updatedAt: updatedUser.updatedAt,
       });

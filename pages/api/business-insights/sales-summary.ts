@@ -35,6 +35,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(401).json({ error: "Unauthorized" });
   }
 
+  const lokasi = typeof (session as any).lokasi === "string" && (session as any).lokasi.trim()
+    ? (session as any).lokasi.trim()
+    : "PUSAT";
+
   if (req.method !== "GET") {
     res.setHeader("Allow", ["GET"]);
     return res.status(405).end(`Method ${req.method} Not Allowed`);
@@ -45,7 +49,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const invoiceCollection = db.collection("invoices");
     const productCollection = db.collection("Product");
 
-    const products = await productCollection.find({}).toArray();
+    const products = await productCollection.find({ lokasi }).toArray();
     const buyPriceByProductId = new Map<string, number>(
       products.map((product: any) => [String(product._id), toNumber(product.buyPrice, 0)])
     );
@@ -54,7 +58,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const startDate = getPeriodStart(period);
       const invoices = await invoiceCollection
         .find({
-          userId: session.id,
+          lokasi,
           createdAt: { $gte: startDate },
         })
         .toArray();

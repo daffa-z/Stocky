@@ -60,6 +60,9 @@ export default async function handler(
 
   const { method } = req;
   const userId = session.id;
+  const lokasi = typeof (session as any).lokasi === "string" && (session as any).lokasi.trim()
+    ? (session as any).lokasi.trim()
+    : "PUSAT";
 
   switch (method) {
     case "POST":
@@ -78,7 +81,7 @@ export default async function handler(
         } = req.body;
 
         const collection = await getProductsCollection();
-        const existingProduct = await collection.findOne({ sku });
+        const existingProduct = await collection.findOne({ sku, lokasi });
 
         if (existingProduct) {
           return res.status(400).json({ error: "SKU must be unique" });
@@ -103,6 +106,7 @@ export default async function handler(
           quantity: toNumber(quantity, 0),
           status,
           userId,
+          lokasi,
           categoryId,
           supplierId,
           createdAt,
@@ -124,6 +128,7 @@ export default async function handler(
         if (initialQty > 0) {
           await movementCollection.insertOne({
             userId,
+            lokasi,
             productId: inserted.insertedId.toString(),
             productName: productDoc.name,
             category: categoryName,
@@ -154,7 +159,7 @@ export default async function handler(
     case "GET":
       try {
         const collection = await getProductsCollection();
-        const products = await collection.find({}).toArray();
+        const products = await collection.find({ lokasi }).toArray();
 
         const transformedProducts = await Promise.all(
           products.map(async (product: any) => {
@@ -241,7 +246,7 @@ export default async function handler(
           return res.status(400).json({ error: "Harga jual tidak boleh melebihi HET" });
         }
 
-        const previousProduct: any = await collection.findOne({ _id: new ObjectId(id) });
+        const previousProduct: any = await collection.findOne({ _id: new ObjectId(id), lokasi });
         if (!previousProduct) {
           return res.status(404).json({ error: "Product not found" });
         }
@@ -249,7 +254,7 @@ export default async function handler(
         const nextQuantity = toNumber(quantity, 0);
 
         await collection.updateOne(
-          { _id: new ObjectId(id) },
+          { _id: new ObjectId(id), lokasi },
           {
             $set: {
               name,
@@ -268,7 +273,7 @@ export default async function handler(
           }
         );
 
-        const updatedProduct = await collection.findOne({ _id: new ObjectId(id) });
+        const updatedProduct = await collection.findOne({ _id: new ObjectId(id), lokasi });
         const categoryName = await findCategoryNameById(categoryId);
         const supplierName = await findSupplierNameById(supplierId);
 
@@ -282,6 +287,7 @@ export default async function handler(
           const movementCollection = mongoClient.db().collection("stock_movements");
           await movementCollection.insertOne({
             userId,
+            lokasi,
             productId: updatedProduct._id.toString(),
             productName: updatedProduct.name,
             category: categoryName,
@@ -325,7 +331,7 @@ export default async function handler(
       try {
         const { id } = req.body;
         const collection = await getProductsCollection();
-        await collection.deleteOne({ _id: new ObjectId(id) });
+        await collection.deleteOne({ _id: new ObjectId(id), lokasi });
 
         res.status(204).end();
       } catch (error) {

@@ -11,6 +11,7 @@ interface User {
   name?: string;
   email: string;
   role: string;
+  lokasi?: string;
 }
 
 interface AuthContextType {
@@ -74,6 +75,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             name: session.name,
             email: session.email,
             role: session.role || "USER",
+            lokasi: (session as any).lokasi || "PUSAT",
           });
           // Debug log - only log in development
           if (process.env.NODE_ENV === 'development') {
@@ -109,6 +111,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         name: result.userName,
         email: result.userEmail,
         role: result.userRole || "USER",
+        lokasi: result.userLokasi || "PUSAT",
       });
       Cookies.set("session_id", result.sessionId);
       // Debug log - only log in development

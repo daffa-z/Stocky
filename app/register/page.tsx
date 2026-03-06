@@ -15,6 +15,7 @@ export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<RoleType>("USER");
+  const [lokasi, setLokasi] = useState("PUSAT");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
@@ -29,6 +30,7 @@ export default function Register() {
         email,
         password,
         role,
+        lokasi,
       });
 
       if (response.status === 201) {
@@ -41,6 +43,7 @@ export default function Register() {
         setEmail("");
         setPassword("");
         setRole("USER");
+        setLokasi("PUSAT");
 
         setTimeout(() => {
           router.push("/login");
@@ -66,6 +69,8 @@ export default function Register() {
         <Input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" required />
         <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" required />
         <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" required />
+
+        <Input type="text" value={lokasi} onChange={(e) => setLokasi(e.target.value)} placeholder="Lokasi (contoh: CABANG-A)" required />
 
         <select
           value={role}
