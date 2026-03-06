@@ -48,7 +48,7 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({
       {/* Responsive Card */}
       <Card className="flex flex-col shadow-none space-y-4 lg:space-y-6 lg:mx-8 lg:my-6 lg:rounded-lg lg:border lg:shadow-md">
         {/* Header Section */}
-        {showHeader && <AppHeader />}
+        {showHeader && <div className="print:hidden"><AppHeader /></div>}
 
         {/* Main Content */}
         <div className="p-0 lg:p-4">
