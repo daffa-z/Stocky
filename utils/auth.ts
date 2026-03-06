@@ -4,8 +4,6 @@ import jwt from "jsonwebtoken";
 import { PrismaClient, User as PrismaUser } from "@prisma/client";
 import Cookies from "js-cookie"; // Import js-cookie
 import { NextApiRequest, NextApiResponse } from "next";
-import { ObjectId } from "mongodb";
-import { getMongoDb } from "@/utils/mongo";
 
 const prisma = new PrismaClient();
 
@@ -85,6 +83,11 @@ export const getSessionServer = async (
 
   let mongoUser: any = null;
   try {
+    const [{ ObjectId }, { getMongoDb }] = await Promise.all([
+      import("mongodb"),
+      import("@/utils/mongo"),
+    ]);
+
     if (ObjectId.isValid(decoded.userId)) {
       const db = await getMongoDb();
       mongoUser = await db.collection("User").findOne({ _id: new ObjectId(decoded.userId) });
