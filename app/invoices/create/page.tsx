@@ -505,13 +505,14 @@ export default function InvoicesPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="signatureName">Nama Penanda Tangan</Label>
+              <Label htmlFor="signatureName">Nama Penanda Tangan (untuk tanda tangan PDF)</Label>
               <Input
                 id="signatureName"
                 placeholder="Koperasi"
                 value={signatureName}
                 onChange={(e) => setSignatureName(e.target.value)}
               />
+              <p className="text-xs text-muted-foreground">Nama ini akan muncul di bagian tanda tangan pada hasil Print / Save PDF.</p>
             </div>
             <div className="rounded-md border p-3 text-sm space-y-1">
               <p>Subtotal: {formatCurrency(estimatedTotal)}</p>
@@ -538,6 +539,7 @@ export default function InvoicesPage() {
             <div className="space-y-3 text-sm">
               <p><span className="font-medium">Customer:</span> {customerName || "Walk-in Customer"}</p>
               <p><span className="font-medium">Payment:</span> {paymentMethod} {bankName ? `- ${bankName}` : ""}</p>
+              <p><span className="font-medium">Penanda Tangan:</span> {signatureName || "Koperasi"}</p>
               <div className="rounded-md border p-3 space-y-1">
                 <p>Subtotal: {formatCurrency(estimatedTotal)}</p>
                 <p>Discount: -{formatCurrency(estimatedDiscountAmount)}</p>
