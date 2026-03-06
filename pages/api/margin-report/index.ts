@@ -17,7 +17,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const lokasi = typeof (session as any).lokasi === "string" && (session as any).lokasi.trim()
     ? (session as any).lokasi.trim()
-    : "PUSAT";
+     : "PUSAT";
+  const isPusat = lokasi.toUpperCase() === "PUSAT";
 
   if (req.method !== "GET") {
     res.setHeader("Allow", ["GET"]);
@@ -30,8 +31,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const productCollection = db.collection("Product");
 
     const [invoices, products] = await Promise.all([
-      invoiceCollection.find({ lokasi }).sort({ createdAt: -1 }).toArray(),
-      productCollection.find({ lokasi }).toArray(),
+      invoiceCollection.find(isPusat ? {} : { lokasi }).sort({ createdAt: -1 }).toArray(),
+      productCollection.find(isPusat ? {} : { lokasi }).toArray(),
     ]);
 
     const buyPriceByProductId = new Map<string, number>(

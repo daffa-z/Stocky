@@ -87,6 +87,7 @@ model Supplier {
   email       String?
   address     String?
   userId      String  @db.ObjectId
+  lokasi      String  @default("PUSAT")
 
 }
 

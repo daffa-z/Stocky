@@ -17,6 +17,10 @@ export default async function handler(
 
   const { method } = req;
   const userId = session.id;
+  const lokasi = typeof (session as any).lokasi === "string" && (session as any).lokasi.trim()
+    ? (session as any).lokasi.trim()
+    : "PUSAT";
+  const isPusat = lokasi.toUpperCase() === "PUSAT";
 
   switch (method) {
     case "POST":
@@ -35,6 +39,7 @@ export default async function handler(
             email: email?.trim() || null,
             address: address?.trim() || null,
             userId,
+            lokasi,
           },
         });
         res.status(201).json(supplier);
@@ -52,6 +57,7 @@ export default async function handler(
               email: email?.trim() || null,
               address: address?.trim() || null,
               userId,
+              lokasi,
             };
             const db = await getMongoDb();
             const result = await db.collection("Supplier").insertOne(payload);
@@ -67,7 +73,7 @@ export default async function handler(
     case "GET":
       try {
         const suppliers = await prisma.supplier.findMany({
-          where: {},
+          where: isPusat ? {} : { lokasi },
           orderBy: { name: "asc" },
         });
         res.status(200).json(suppliers);
@@ -85,7 +91,7 @@ export default async function handler(
         }
 
         const existingSupplier = await prisma.supplier.findFirst({
-          where: { id, userId },
+          where: isPusat ? { id } : { id, lokasi },
         });
 
         if (!existingSupplier) {
@@ -118,7 +124,7 @@ export default async function handler(
             const result = await db
               .collection("Supplier")
               .findOneAndUpdate(
-                { _id: new ObjectId(id), userId },
+                isPusat ? { _id: new ObjectId(id) } : { _id: new ObjectId(id), lokasi },
                 {
                   $set: {
                     name: name.trim(),
@@ -141,6 +147,7 @@ export default async function handler(
               email: result.value.email,
               address: result.value.address,
               userId: result.value.userId,
+              lokasi: result.value.lokasi || "PUSAT",
             });
           } catch (mongoError) {
             console.error("Error updating supplier (fallback):", mongoError);
@@ -155,7 +162,7 @@ export default async function handler(
         const { id } = req.body;
 
         const supplier = await prisma.supplier.findFirst({
-          where: { id, userId },
+          where: isPusat ? { id } : { id, lokasi },
         });
 
         if (!supplier) {
@@ -177,7 +184,7 @@ export default async function handler(
             const db = await getMongoDb();
             const result = await db
               .collection("Supplier")
-              .deleteOne({ _id: new ObjectId(id), userId });
+              .deleteOne(isPusat ? { _id: new ObjectId(id) } : { _id: new ObjectId(id), lokasi });
             if (!result.deletedCount) {
               return res.status(404).json({ error: "Supplier not found" });
             }

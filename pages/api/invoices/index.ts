@@ -107,7 +107,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const userId = session.id;
   const lokasi = typeof (session as any).lokasi === "string" && (session as any).lokasi.trim()
     ? (session as any).lokasi.trim()
-    : "PUSAT";
+     : "PUSAT";
+  const isPusat = lokasi.toUpperCase() === "PUSAT";
 
   if (req.method === "GET") {
     const limit = Math.min(Math.max(Number(req.query.limit) || 10, 1), 100);
@@ -128,8 +129,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const db = client.db(dbName);
         const invoiceCollection = db.collection("invoices");
 
-        const analyticsQuery: any = { lokasi };
-        const recentInvoiceQuery: any = { lokasi };
+        const analyticsQuery: any = isPusat ? {} : { lokasi };
+        const recentInvoiceQuery: any = isPusat ? {} : { lokasi };
 
         if (search) {
           recentInvoiceQuery.$or = [
@@ -288,7 +289,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(400).json({ error: "One or more products were not found" });
       }
 
-      const products = await productCollection.find({ _id: { $in: productObjectIds as ObjectId[] }, lokasi }).toArray();
+      const products = await productCollection.find(isPusat
+        ? { _id: { $in: productObjectIds as ObjectId[] } }
+        : { _id: { $in: productObjectIds as ObjectId[] }, lokasi }).toArray();
 
       if (products.length !== uniqueProductIds.length) {
         return res.status(400).json({ error: "One or more products were not found" });
@@ -346,7 +349,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await Promise.all(
         preparedItems.map((item) =>
           productCollection.updateOne(
-            { _id: new ObjectId(item.productId), lokasi },
+            isPusat ? { _id: new ObjectId(item.productId) } : { _id: new ObjectId(item.productId), lokasi },
             {
               $set: {
                 quantity: item.remainingQuantity,
