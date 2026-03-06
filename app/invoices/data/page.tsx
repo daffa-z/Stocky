@@ -38,6 +38,7 @@ interface Invoice {
   paymentMethod: string;
   createdByName?: string;
   keterangan: string;
+  signatureName?: string;
   createdAt: string;
   items: InvoiceItem[];
 }
@@ -357,7 +358,7 @@ export default function InvoiceDataPage() {
                     <div className="text-center min-w-56">
                       <p>{new Date(selectedInvoice.createdAt).toLocaleDateString("id-ID")}</p>
                       <p className="mb-16">Mengetahui,</p>
-                      <p className="font-semibold underline">Koperasi</p>
+                      <p className="font-semibold underline">{selectedInvoice.signatureName || "Koperasi"}</p>
                     </div>
                   </div>
                 </CardContent>

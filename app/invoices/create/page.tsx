@@ -37,6 +37,7 @@ interface CreatedInvoice {
   paymentMethod: string;
   bankName: string;
   keterangan: string;
+  signatureName: string;
   createdAt: string;
   items: Array<{
     productId: string;
@@ -74,6 +75,7 @@ export default function InvoicesPage() {
   const [paymentMethod, setPaymentMethod] = useState<(typeof PAYMENT_METHODS)[number]>("Tunai");
   const [bankName, setBankName] = useState<(typeof BANK_OPTIONS)[number] | "">("");
   const [keterangan, setKeterangan] = useState("");
+  const [signatureName, setSignatureName] = useState("Koperasi");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdInvoice, setCreatedInvoice] = useState<CreatedInvoice | null>(null);
   const [isFinished, setIsFinished] = useState(false);
@@ -184,6 +186,7 @@ export default function InvoicesPage() {
         paymentMethod,
         bankName,
         keterangan,
+        signatureName,
       });
 
       setCreatedInvoice(response.data);
@@ -198,6 +201,7 @@ export default function InvoicesPage() {
       setPaymentMethod("Tunai");
       setBankName("");
       setKeterangan("");
+      setSignatureName("Koperasi");
       setIsFinished(false);
       await loadProducts();
 
@@ -500,6 +504,15 @@ export default function InvoicesPage() {
                 onChange={(e) => setKeterangan(e.target.value)}
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="signatureName">Nama Penanda Tangan</Label>
+              <Input
+                id="signatureName"
+                placeholder="Koperasi"
+                value={signatureName}
+                onChange={(e) => setSignatureName(e.target.value)}
+              />
+            </div>
             <div className="rounded-md border p-3 text-sm space-y-1">
               <p>Subtotal: {formatCurrency(estimatedTotal)}</p>
               <p>Discount: -{formatCurrency(estimatedDiscountAmount)}</p>
@@ -647,7 +660,7 @@ export default function InvoicesPage() {
                 <div className="text-center min-w-56">
                   <p>{new Date(createdInvoice.createdAt).toLocaleDateString("id-ID")}</p>
                   <p className="mb-16">Mengetahui,</p>
-                  <p className="font-semibold underline">Koperasi</p>
+                  <p className="font-semibold underline">{createdInvoice.signatureName || "Koperasi"}</p>
                 </div>
               </div>
             </CardContent>

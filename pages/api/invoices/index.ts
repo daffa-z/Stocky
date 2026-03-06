@@ -52,6 +52,7 @@ type NormalizedInvoice = {
   createdByName: string;
   createdByEmail: string;
   keterangan: string;
+  signatureName: string;
   createdAt: string;
   items: NormalizedInvoiceItem[];
 };
@@ -84,6 +85,7 @@ const normalizeInvoice = (invoice: any): NormalizedInvoice => ({
   createdByName: invoice.createdByName || "admin",
   createdByEmail: invoice.createdByEmail || "",
   keterangan: invoice.keterangan,
+  signatureName: typeof invoice.signatureName === "string" ? invoice.signatureName : "Koperasi",
   createdAt: new Date(invoice.createdAt).toISOString(),
   items: Array.isArray(invoice.items)
     ? invoice.items.map((item: any): NormalizedInvoiceItem => ({
@@ -229,7 +231,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 
-  const { customerName, items, taxRate, amountPaid, paymentMethod, bankName, keterangan } = req.body as {
+  const { customerName, items, taxRate, amountPaid, paymentMethod, bankName, keterangan, signatureName } = req.body as {
     customerName?: string;
     items?: Array<{ productId: string; quantity: number }>;
     taxRate?: number;
@@ -237,6 +239,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     paymentMethod?: string;
     bankName?: string;
     keterangan?: string;
+    signatureName?: string;
     discountType?: "percentage" | "fixed";
     discountValue?: number;
     promoCode?: string;
@@ -400,6 +403,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         paymentMethod: paymentMethod?.trim() || "Cash",
         bankName: bankName?.trim() || "",
         keterangan: keterangan?.trim() || "",
+        signatureName: signatureName?.trim() || "Koperasi",
         totalAmount,
         createdAt: new Date(),
       };
