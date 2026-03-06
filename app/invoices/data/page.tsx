@@ -293,7 +293,7 @@ export default function InvoiceDataPage() {
             </div>
 
             {selectedInvoice && (
-              <Card className="font-mono">
+              <Card className="font-mono invoice-print-compact">
                 <CardHeader>
                   <CardTitle>Invoice Detail - {selectedInvoice.invoiceNumber}</CardTitle>
                   <p className="text-sm text-muted-foreground">

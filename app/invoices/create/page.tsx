@@ -571,7 +571,7 @@ export default function InvoicesPage() {
 
 
         {createdInvoice && (
-          <Card className="print:font-mono">
+          <Card className="print:font-mono invoice-print-compact">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Invoice {createdInvoice.invoiceNumber}</CardTitle>
