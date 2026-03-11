@@ -11,6 +11,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret";
 
 type SessionUser = Omit<PrismaUser, "password"> & {
   role?: string;
+  lokasi?: string;
 };
 
 // Check if we're on the server side
@@ -78,26 +79,56 @@ export const getSessionServer = async (
 
   const user = (await prisma.user.findUnique({
     where: { id: decoded.userId },
-  })) as (PrismaUser & { role?: string }) | null;
+  })) as (PrismaUser & { role?: string; lokasi?: string }) | null;
+
+  let mongoUser: any = null;
+  try {
+    const [{ ObjectId }, { getMongoDb }] = await Promise.all([
+      import("mongodb"),
+      import("@/utils/mongo"),
+    ]);
+
+    if (ObjectId.isValid(decoded.userId)) {
+      const db = await getMongoDb();
+      mongoUser = await db.collection("User").findOne({ _id: new ObjectId(decoded.userId) });
+    }
+  } catch (mongoError) {
+    if (process.env.NODE_ENV === "development") {
+      console.error("Failed to read user from Mongo in session resolver:", mongoError);
+    }
+  }
+
+  const sourceUser = user || mongoUser;
 
   // Debug log - only log in development
   if (process.env.NODE_ENV === "development") {
-    console.log("User from session:", user);
+    console.log("User from session:", sourceUser);
   }
-  if (!user) {
+  if (!sourceUser) {
     return null;
   }
 
-  let resolvedRole = user.role;
+  const resolvedRole =
+    (typeof mongoUser?.role === "string" && mongoUser.role.trim()) ||
+    (typeof user?.role === "string" && user.role.trim()) ||
+    "ADMIN";
 
-  if (!resolvedRole) {
-    resolvedRole = "ADMIN";
+  const resolvedLokasi =
+    (typeof mongoUser?.lokasi === "string" && mongoUser.lokasi.trim()) ||
+    (typeof user?.lokasi === "string" && user.lokasi.trim()) ||
+    "PUSAT";
+
+  const password = sourceUser.password;
+  const { password: _password, ...sessionUser } = sourceUser;
+  if (!password && !user?.password) {
+    return null;
   }
 
-  const { password: _password, ...sessionUser } = user;
   return {
     ...sessionUser,
+    id: String(sourceUser.id || sourceUser._id || decoded.userId),
     role: resolvedRole,
+    lokasi: resolvedLokasi,
   };
 };
 

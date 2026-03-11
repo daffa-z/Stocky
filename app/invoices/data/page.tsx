@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import axiosInstance from "@/utils/axiosInstance";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
@@ -37,6 +38,7 @@ interface Invoice {
   paymentMethod: string;
   createdByName?: string;
   keterangan: string;
+  signatureName?: string;
   createdAt: string;
   items: InvoiceItem[];
 }
@@ -292,56 +294,72 @@ export default function InvoiceDataPage() {
             </div>
 
             {selectedInvoice && (
-              <Card>
+              <Card className="font-mono invoice-print-compact">
                 <CardHeader>
                   <CardTitle>Invoice Detail - {selectedInvoice.invoiceNumber}</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedInvoice.customerName} • {new Date(selectedInvoice.createdAt).toLocaleString()}
+                  </p>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid gap-2 md:grid-cols-2 text-sm">
-                    <p><span className="font-medium">Customer:</span> {selectedInvoice.customerName}</p>
-                    <p><span className="font-medium">Date:</span> {new Date(selectedInvoice.createdAt).toLocaleString()}</p>
-                    <p><span className="font-medium">Payment:</span> {selectedInvoice.paymentMethod}</p>
-                    <p><span className="font-medium">Input By:</span> {selectedInvoice.createdByName || "admin"}</p>
-                    <p><span className="font-medium">Promo:</span> {selectedInvoice.promoCode || "-"}</p>
-                    <p><span className="font-medium">Discount:</span> {formatCurrency(selectedInvoice.discountAmount || 0)} ({selectedInvoice.discountType === "percentage" ? `${selectedInvoice.discountValue || 0}%` : formatCurrency(selectedInvoice.discountValue || 0)})</p>
-                    <p><span className="font-medium">Tax:</span> {formatCurrency(selectedInvoice.taxAmount)} ({selectedInvoice.taxRate}%)</p>
-                    <p className="md:col-span-2"><span className="font-medium">Note:</span> {selectedInvoice.keterangan || "-"}</p>
+                <CardContent>
+                  <div className="mb-4">
+                    <Image
+                      src="/pdf-header-template.svg"
+                      alt="Header Koperasi"
+                      width={2048}
+                      height={357}
+                      className="w-full h-auto"
+                    />
                   </div>
 
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b text-left">
-                          <th className="px-2 py-2">Product</th>
-                          <th className="px-2 py-2">SKU</th>
-                          <th className="px-2 py-2">Supplier</th>
-                          <th className="px-2 py-2">Qty</th>
-                          <th className="px-2 py-2">Price</th>
-                          <th className="px-2 py-2 text-right">Line Total</th>
+                  <h3 className="text-xl font-bold mb-3 text-center">Rincian Transaksi Penjualan</h3>
+                  <table className="w-full border-collapse text-sm">
+                    <thead>
+                      <tr className="border-b text-left">
+                        <th className="py-2">Product</th>
+                        <th className="py-2">SKU</th>
+                        <th className="py-2">Supplier</th>
+                        <th className="py-2">Qty</th>
+                        <th className="py-2">Price</th>
+                        <th className="py-2 text-right">Line Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedInvoice.items.map((item) => (
+                        <tr key={`${selectedInvoice.id}-${item.productId}-${item.sku}`} className="border-b">
+                          <td className="py-2">{item.name}</td>
+                          <td className="py-2">{item.sku}</td>
+                          <td className="py-2">{item.supplier}</td>
+                          <td className="py-2">{item.quantity}</td>
+                          <td className="py-2">{formatCurrency(item.price)}</td>
+                          <td className="py-2 text-right">{formatCurrency(item.lineTotal)}</td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {selectedInvoice.items.map((item) => (
-                          <tr key={`${selectedInvoice.id}-${item.productId}-${item.sku}`} className="border-b">
-                            <td className="px-2 py-2">{item.name}</td>
-                            <td className="px-2 py-2">{item.sku}</td>
-                            <td className="px-2 py-2">{item.supplier}</td>
-                            <td className="px-2 py-2">{item.quantity}</td>
-                            <td className="px-2 py-2">{formatCurrency(item.price)}</td>
-                            <td className="px-2 py-2 text-right">{formatCurrency(item.lineTotal)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  <div className="mt-4 text-right space-y-1 text-sm">
+                    <p>Payment Method: {selectedInvoice.paymentMethod}</p>
+                    <p>Input By: {selectedInvoice.createdByName || "admin"}</p>
+                    <p>Subtotal: {formatCurrency(selectedInvoice.totalAmount)}</p>
+                    <p>Promo Code: {selectedInvoice.promoCode || "-"}</p>
+                    <p>
+                      Discount ({selectedInvoice.discountType === "percentage" ? `${selectedInvoice.discountValue || 0}%` : formatCurrency(selectedInvoice.discountValue || 0)}): -
+                      {formatCurrency(selectedInvoice.discountAmount || 0)}
+                    </p>
+                    <p>Tax ({selectedInvoice.taxRate}%): {formatCurrency(selectedInvoice.taxAmount)}</p>
+                    <p className="font-semibold text-base">Grand Total: {formatCurrency(selectedInvoice.grandTotal)}</p>
+                    <p>Amount Paid: {formatCurrency(selectedInvoice.amountPaid)}</p>
+                    <p>Return/Change: {formatCurrency(selectedInvoice.changeAmount)}</p>
+                    <p>Keterangan: {selectedInvoice.keterangan || "-"}</p>
                   </div>
 
-                  <div className="text-right space-y-1 text-sm">
-                    <p>Subtotal: {formatCurrency(selectedInvoice.totalAmount)}</p>
-                    <p>Discount: -{formatCurrency(selectedInvoice.discountAmount || 0)}</p>
-                    <p>Tax: {formatCurrency(selectedInvoice.taxAmount)}</p>
-                    <p className="text-base font-semibold">Grand Total: {formatCurrency(selectedInvoice.grandTotal)}</p>
-                    <p>Amount Paid: {formatCurrency(selectedInvoice.amountPaid)}</p>
-                    <p>Change: {formatCurrency(selectedInvoice.changeAmount)}</p>
+                  <div className="mt-10 flex justify-end">
+                    <div className="text-center min-w-56">
+                      <p>{new Date(selectedInvoice.createdAt).toLocaleDateString("id-ID")}</p>
+                      <p className="mb-16">Mengetahui,</p>
+                      <p className="font-semibold underline">{selectedInvoice.signatureName || "Koperasi"}</p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

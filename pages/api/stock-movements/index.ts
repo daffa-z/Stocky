@@ -24,6 +24,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const userId = session.id;
+  const lokasi = typeof (session as any).lokasi === "string" && (session as any).lokasi.trim()
+    ? (session as any).lokasi.trim()
+     : "PUSAT";
+  const isPusat = lokasi.toUpperCase() === "PUSAT";
 
   if (req.method === "GET") {
     const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 100);
@@ -44,7 +48,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const db = client.db(dbName);
         const collection = db.collection("stock_movements");
 
-        const query: any = {};
+        const query: any = isPusat ? {} : { lokasi };
         if (search) {
           query.$or = [
             { productName: { $regex: search, $options: "i" } },
@@ -142,7 +146,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const productCollection = db.collection("Product");
       const movementCollection = db.collection("stock_movements");
 
-      const product = await productCollection.findOne({ _id: new ObjectId(productId) });
+      const product = await productCollection.findOne(isPusat ? { _id: new ObjectId(productId) } : { _id: new ObjectId(productId), lokasi });
       if (!product) {
         return res.status(404).json({ error: "Product not found" });
       }
@@ -160,7 +164,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ]);
 
       await productCollection.updateOne(
-        { _id: new ObjectId(productId) },
+        isPusat ? { _id: new ObjectId(productId) } : { _id: new ObjectId(productId), lokasi },
         {
           $set: {
             quantity: stockAfter,
@@ -171,6 +175,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const movementDoc = {
         userId,
+        lokasi,
         createdByUserId: session.id,
         createdByName: session.name || "admin",
         createdByEmail: session.email || "",

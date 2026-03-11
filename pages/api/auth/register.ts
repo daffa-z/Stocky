@@ -11,6 +11,7 @@ const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
   role: z.enum(["USER", "ADMIN", "DEV"]).optional().default("USER"),
+  lokasi: z.string().min(1).optional().default("PUSAT"),
 });
 
 export default async function handler(
@@ -22,7 +23,7 @@ export default async function handler(
   }
 
   try {
-    const { name, email, password, role } = registerSchema.parse(req.body);
+    const { name, email, password, role, lokasi } = registerSchema.parse(req.body);
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
@@ -47,6 +48,7 @@ export default async function handler(
         createdAt: new Date(),
         updatedAt: new Date(),
         role,
+        lokasi: lokasi.trim(),
       },
     });
 
@@ -56,11 +58,12 @@ export default async function handler(
       email: newUser.email,
       username: newUser.username,
       role: newUser.role,
+      lokasi: (newUser as any).lokasi || lokasi.trim(),
     });
   } catch (error) {
     if (isReplicaSetTransactionError(error)) {
       try {
-        const { name, email, password, role } = registerSchema.parse(req.body);
+        const { name, email, password, role, lokasi } = registerSchema.parse(req.body);
         const db = await getMongoDb();
         const users = db.collection("User");
 
@@ -87,6 +90,7 @@ export default async function handler(
           createdAt: now,
           updatedAt: now,
           role,
+          lokasi: lokasi.trim(),
         });
 
         return res.status(201).json({
@@ -95,6 +99,7 @@ export default async function handler(
           email,
           username,
           role,
+          lokasi: lokasi.trim(),
         });
       } catch (mongoError) {
         console.error("Register fallback error:", mongoError);

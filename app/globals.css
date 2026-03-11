@@ -85,3 +85,17 @@ body {
 .animate-spin {
   animation: spin 1s linear infinite;
 }
+
+
+@media print {
+  @page {
+    size: 210mm 330mm;
+    margin: 12mm;
+  }
+
+  .invoice-print-compact {
+    transform: scale(0.8);
+    transform-origin: top left;
+    width: 125%;
+  }
+}

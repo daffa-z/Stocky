@@ -33,6 +33,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         { email: { $regex: search, $options: "i" } },
         { username: { $regex: search, $options: "i" } },
         { role: { $regex: search, $options: "i" } },
+        { lokasi: { $regex: search, $options: "i" } },
       ];
     }
 
@@ -54,6 +55,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       email: typeof user.email === "string" ? user.email : "",
       username: typeof user.username === "string" ? user.username : "",
       role: typeof user.role === "string" ? user.role : "ADMIN",
+      lokasi: typeof user.lokasi === "string" && user.lokasi.trim() ? user.lokasi : "PUSAT",
       createdAt: toSafeDate(user.createdAt),
       updatedAt: toSafeDate(user.updatedAt || user.createdAt),
     }));

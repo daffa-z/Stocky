@@ -22,6 +22,7 @@ export default async function handler(
       name: user.name,
       email: user.email,
       role: user.role,
+      lokasi: (user as any).lokasi || "PUSAT",
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     });

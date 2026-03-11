@@ -9,6 +9,7 @@ type UserDocument = {
   email?: string;
   username?: string;
   role?: string;
+  lokasi?: string;
   createdAt?: Date;
   updatedAt?: Date;
 };
@@ -26,6 +27,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(401).json({ error: "Unauthorized" });
   }
 
+
+  const role = (session.role || "USER").toUpperCase();
+  const isDev = role === "DEV";
+
   const id = String(req.query.id || "").trim();
   if (!ObjectId.isValid(id)) {
     return res.status(400).json({ error: "Invalid user id" });
@@ -36,10 +41,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const usersCollection = db.collection<UserDocument>("User");
 
     if (req.method === "PUT") {
-      const { name, username, role } = req.body as {
+      if (!isDev) {
+        return res.status(403).json({ error: "Only DEV can edit user data" });
+      }
+      const { name, username, role, lokasi } = req.body as {
         name?: string;
         username?: string;
         role?: string;
+        lokasi?: string;
       };
 
       const updateData: Record<string, unknown> = {
@@ -71,6 +80,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         updateData.role = normalizeRole(role);
       }
 
+      if (typeof lokasi === "string") {
+        const trimmedLokasi = lokasi.trim();
+        if (!trimmedLokasi) {
+          return res.status(400).json({ error: "Lokasi is required" });
+        }
+        updateData.lokasi = trimmedLokasi;
+      }
+
       const result = await usersCollection.findOneAndUpdate(
         { _id: new ObjectId(id) },
         { $set: updateData },
@@ -88,12 +105,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         email: updatedUser.email || "",
         username: updatedUser.username || "",
         role: updatedUser.role || "USER",
+        lokasi: (updatedUser as any).lokasi || "PUSAT",
         createdAt: updatedUser.createdAt,
         updatedAt: updatedUser.updatedAt,
       });
     }
 
     if (req.method === "DELETE") {
+      if (!isDev) {
+        return res.status(403).json({ error: "Only DEV can edit user data" });
+      }
       if (session.id === id) {
         return res.status(400).json({ error: "You cannot delete your own account" });
       }

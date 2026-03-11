@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import axiosInstance from "@/utils/axiosInstance";
 import { useEffect, useState } from "react";
+import { useAuth } from "../authContext";
 
 interface UserRecord {
   id: string;
@@ -17,6 +18,7 @@ interface UserRecord {
   email: string;
   username: string;
   role: string;
+  lokasi: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -38,17 +40,20 @@ interface EditForm {
   name: string;
   username: string;
   role: "ADMIN" | "USER" | "DEV";
+  lokasi: string;
 }
 
 export default function UsersPage() {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const isDev = (user?.role || "USER").toUpperCase() === "DEV";
   const [data, setData] = useState<UsersResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
   const [editingUser, setEditingUser] = useState<UserRecord | null>(null);
-  const [editForm, setEditForm] = useState<EditForm>({ name: "", username: "", role: "USER" });
+  const [editForm, setEditForm] = useState<EditForm>({ name: "", username: "", role: "USER", lokasi: "PUSAT" });
   const [isSaving, setIsSaving] = useState(false);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
 
@@ -80,11 +85,16 @@ export default function UsersPage() {
       name: user.name,
       username: user.username || "",
       role: user.role === "ADMIN" ? "ADMIN" : user.role === "DEV" ? "DEV" : "USER",
+      lokasi: user.lokasi || "PUSAT",
     });
   };
 
   const saveEdit = async () => {
     if (!editingUser) return;
+    if (!isDev) {
+      toast({ title: "Akses ditolak", description: "Hanya role DEV yang dapat mengubah data pengguna.", variant: "destructive" });
+      return;
+    }
 
     try {
       setIsSaving(true);
@@ -92,6 +102,7 @@ export default function UsersPage() {
         name: editForm.name,
         username: editForm.username,
         role: editForm.role,
+        lokasi: editForm.lokasi,
       });
       toast({ title: "Pengguna diperbarui", description: "Data pengguna berhasil diperbarui." });
       setEditingUser(null);
@@ -108,6 +119,11 @@ export default function UsersPage() {
   };
 
   const deleteUser = async (user: UserRecord) => {
+    if (!isDev) {
+      toast({ title: "Akses ditolak", description: "Hanya role DEV yang dapat mengubah data pengguna.", variant: "destructive" });
+      return;
+    }
+
     const confirmed = window.confirm(`Hapus pengguna ${user.name}? Tindakan ini tidak dapat dibatalkan.`);
     if (!confirmed) return;
 
@@ -144,6 +160,8 @@ export default function UsersPage() {
               }}
             />
 
+            {!isDev && <p className="text-xs text-muted-foreground">Hanya role DEV dapat edit/hapus data pengguna.</p>}
+
             {isLoading ? (
               <p className="text-sm text-muted-foreground">Memuat data pengguna...</p>
             ) : (
@@ -155,6 +173,7 @@ export default function UsersPage() {
                       <TableHead>Email</TableHead>
                       <TableHead>Nama Pengguna</TableHead>
                       <TableHead>Peran</TableHead>
+                      <TableHead>Lokasi</TableHead>
                       <TableHead>Dibuat</TableHead>
                       <TableHead>Diperbarui</TableHead>
                       <TableHead>Aksi</TableHead>
@@ -167,11 +186,12 @@ export default function UsersPage() {
                         <TableCell>{user.email}</TableCell>
                         <TableCell>{user.username || "-"}</TableCell>
                         <TableCell>{user.role || "ADMIN"}</TableCell>
+                        <TableCell>{user.lokasi || "PUSAT"}</TableCell>
                         <TableCell>{new Date(user.createdAt).toLocaleString("id-ID")}</TableCell>
                         <TableCell>{new Date(user.updatedAt).toLocaleString("id-ID")}</TableCell>
                         <TableCell>
                           <div className="flex gap-2">
-                            <Button type="button" size="sm" variant="outline" onClick={() => openEditDialog(user)}>
+                            <Button type="button" size="sm" variant="outline" onClick={() => openEditDialog(user)} disabled={!isDev}>
                               Edit
                             </Button>
                             <Button
@@ -179,7 +199,7 @@ export default function UsersPage() {
                               size="sm"
                               variant="destructive"
                               onClick={() => deleteUser(user)}
-                              disabled={deletingUserId === user.id}
+                              disabled={!isDev || deletingUserId === user.id}
                             >
                               {deletingUserId === user.id ? "Menghapus..." : "Hapus"}
                             </Button>
@@ -189,7 +209,7 @@ export default function UsersPage() {
                     ))}
                     {!data?.users.length && (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center text-muted-foreground">
+                        <TableCell colSpan={8} className="text-center text-muted-foreground">
                           Tidak ada data pengguna.
                         </TableCell>
                       </TableRow>
@@ -245,6 +265,14 @@ export default function UsersPage() {
                 <Input
                   value={editForm.username}
                   onChange={(e) => setEditForm((prev) => ({ ...prev, username: e.target.value }))}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Lokasi</Label>
+                <Input
+                  value={editForm.lokasi}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, lokasi: e.target.value }))}
                 />
               </div>
 
