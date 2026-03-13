@@ -228,21 +228,21 @@ export default function BusinessInsightsPage() {
 
     // Price range distribution
     const priceRanges = [
-      { name: "$0-$100", min: 0, max: 100 },
-      { name: "$100-$500", min: 100, max: 500 },
-      { name: "$500-$1000", min: 500, max: 1000 },
-      { name: "$1000-$2000", min: 1000, max: 2000 },
-      { name: "$2000+", min: 2000, max: Infinity },
+      { name: "Rp0-Rp100", min: 0, max: 100 },
+      { name: "Rp100-Rp500", min: 100, max: 500 },
+      { name: "Rp500-Rp1000", min: 500, max: 1000 },
+      { name: "Rp1000-Rp2000", min: 1000, max: 2000 },
+      { name: "Rp2000+", min: 2000, max: Infinity },
     ];
 
     const priceRangeDistribution = priceRanges.map((range, index) => ({
       name: range.name,
       value: allProducts.filter((product) => {
-        if (range.name === "$2000+") {
-          // For $2000+ range, include products > $2000 (not including $2000)
+        if (range.name === "Rp2000+") {
+          // For Rp2000+ range, include products > Rp2000 (not including Rp2000)
           return product.price > 2000;
-        } else if (range.name === "$1000-$2000") {
-          // For $1000-$2000 range, include products >= $1000 and <= $2000
+        } else if (range.name === "Rp1000-Rp2000") {
+          // For Rp1000-Rp2000 range, include products >= Rp1000 and <= Rp2000
           return product.price >= range.min && product.price <= range.max;
         } else {
           // For other ranges, include products >= min and < max (exclusive upper bound)
@@ -397,7 +397,7 @@ export default function BusinessInsightsPage() {
           />
           <AnalyticsCard
             title="Total Nilai"
-            value={`$${analyticsData.totalValue.toLocaleString()}`}
+            value={formatCurrency(analyticsData.totalValue)}
             icon={DollarSign}
             iconColor="text-green-600"
             description="Total nilai inventaris"
@@ -576,8 +576,8 @@ export default function BusinessInsightsPage() {
                     <YAxis />
                     <Tooltip
                       formatter={(value) => [
-                        `$${value.toLocaleString()}`,
-                        "Value",
+                        formatCurrency(Number(value)),
+                        "Nilai",
                       ]}
                       labelFormatter={(label) => `Product: ${label}`}
                     />
@@ -661,7 +661,7 @@ export default function BusinessInsightsPage() {
               <div className="flex justify-between items-center">
                 <span className="text-sm">Harga Rata-rata</span>
                 <span className="font-semibold">
-                  ${analyticsData.averagePrice.toFixed(2)}
+                  {formatCurrency(analyticsData.averagePrice)}
                 </span>
               </div>
               <div className="flex justify-between items-center">
@@ -708,7 +708,7 @@ export default function BusinessInsightsPage() {
               <div className="flex justify-between items-center">
                 <span className="text-sm">Kepadatan Nilai</span>
                 <span className="font-semibold">
-                  ${analyticsData.valueDensity.toFixed(2)} per product
+                  {formatCurrency(analyticsData.valueDensity)} per produk
                 </span>
               </div>
             </CardContent>

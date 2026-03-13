@@ -79,7 +79,7 @@ export default function AddProductDialog({
     },
   });
 
-  const { reset } = methods;
+  const { reset, watch, setValue } = methods;
 
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedSupplier, setSelectedSupplier] = useState<string>("");
@@ -130,6 +130,24 @@ export default function AddProductDialog({
       setSelectedSupplier("");
     }
   }, [selectedProduct, openProductDialog, reset]);
+
+  const buyPrice = watch("buyPrice");
+  const minimumMarginPercent = watch("minimumMarginPercent");
+
+  useEffect(() => {
+    if (selectedProduct) {
+      return;
+    }
+
+    const normalizedBuyPrice = Number(buyPrice) || 0;
+    const normalizedMargin = Math.max(Number(minimumMarginPercent) || 0, 10);
+    const recommendedSellPrice = normalizedBuyPrice + normalizedBuyPrice * (normalizedMargin / 100);
+
+    setValue("sellPrice", recommendedSellPrice, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+  }, [buyPrice, minimumMarginPercent, selectedProduct, setValue]);
 
   const calculateStatus = (quantity: number): string => {
     if (quantity > 20) return "Tersedia";

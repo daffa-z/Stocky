@@ -93,8 +93,8 @@ export default function InvoiceDataPage() {
         setData(response.data);
       } catch (error: any) {
         toast({
-          title: "Failed to load invoice data",
-          description: error?.response?.data?.error || "Please try again in a moment.",
+          title: "Gagal memuat data faktur",
+          description: error?.response?.data?.error || "Silakan coba lagi sebentar lagi.",
           variant: "destructive",
         });
       } finally {
@@ -129,59 +129,59 @@ export default function InvoiceDataPage() {
       <div className="space-y-6 p-4 lg:p-0">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-2xl font-bold">Invoice Data Review</h2>
-            <p className="text-sm text-muted-foreground">Monitor sales invoices before building your final reports.</p>
+            <h2 className="text-2xl font-bold">Tinjauan Data Faktur</h2>
+            <p className="text-sm text-muted-foreground">Pantau faktur penjualan sebelum membuat laporan akhir.</p>
           </div>
           <div className="flex gap-2">
             <Link href="/invoices/create">
-              <Button variant="outline">Create Invoice</Button>
+              <Button variant="outline">Buat Faktur</Button>
             </Link>
             <Link href="/invoices/purchasing">
-              <Button>Purchasing Review</Button>
+              <Button>Tinjauan Pembelian</Button>
             </Link>
           </div>
         </div>
 
         {isInitialLoading ? (
           <Card>
-            <CardContent className="py-10 text-center text-sm text-muted-foreground">Loading invoice data...</CardContent>
+            <CardContent className="py-10 text-center text-sm text-muted-foreground">Memuat data faktur...</CardContent>
           </Card>
         ) : (
           <>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-sm">Revenue</CardTitle>
+                  <CardTitle className="text-sm">Pendapatan</CardTitle>
                 </CardHeader>
                 <CardContent className="text-xl font-semibold">{formatCurrency(data?.summary.revenue || 0)}</CardContent>
               </Card>
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-sm">Discount Given</CardTitle>
+                  <CardTitle className="text-sm">Total Diskon</CardTitle>
                 </CardHeader>
                 <CardContent className="text-xl font-semibold">{formatCurrency(data?.summary.totalDiscount || 0)}</CardContent>
               </Card>
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-sm">Tax Collected</CardTitle>
+                  <CardTitle className="text-sm">Pajak Terkumpul</CardTitle>
                 </CardHeader>
                 <CardContent className="text-xl font-semibold">{formatCurrency(data?.summary.taxCollected || 0)}</CardContent>
               </Card>
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-sm">Invoices</CardTitle>
+                  <CardTitle className="text-sm">Jumlah Faktur</CardTitle>
                 </CardHeader>
                 <CardContent className="text-xl font-semibold">{data?.summary.invoiceCount || 0}</CardContent>
               </Card>
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-sm">Items Sold</CardTitle>
+                  <CardTitle className="text-sm">Produk Terjual</CardTitle>
                 </CardHeader>
                 <CardContent className="text-xl font-semibold">{data?.summary.itemsSold || 0}</CardContent>
               </Card>
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-sm">Avg. Invoice Value</CardTitle>
+                  <CardTitle className="text-sm">Rata-rata Nilai Faktur</CardTitle>
                 </CardHeader>
                 <CardContent className="text-xl font-semibold">{formatCurrency(data?.summary.averageInvoiceValue || 0)}</CardContent>
               </Card>
@@ -192,7 +192,7 @@ export default function InvoiceDataPage() {
               <CardContent className="pt-6">
                 <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
                   <Input
-                    placeholder="Search invoice number, customer, promo, payment, note..."
+                    placeholder="Cari nomor faktur, pelanggan, promo, pembayaran, catatan..."
                     value={search}
                     onChange={(e) => {
                       setSearch(e.target.value);
@@ -201,7 +201,7 @@ export default function InvoiceDataPage() {
                     className="md:max-w-md"
                   />
                   <p className="text-sm text-muted-foreground">
-                    Showing {data?.invoices.length || 0} of {data?.pagination.totalCount || 0} invoices {isTableLoading ? "(updating...)" : ""}
+                    Menampilkan {data?.invoices.length || 0} dari {data?.pagination.totalCount || 0} faktur {isTableLoading ? "(memperbarui...)" : ""}
                   </p>
                 </div>
               </CardContent>
@@ -210,19 +210,19 @@ export default function InvoiceDataPage() {
             <div className="grid gap-4 lg:grid-cols-5">
               <Card className="lg:col-span-3">
                 <CardHeader>
-                  <CardTitle>Recent Invoices</CardTitle>
+                  <CardTitle>Faktur Terbaru</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {isTableLoading && <p className="text-xs text-muted-foreground mb-2">Loading recent invoices...</p>}
+                  {isTableLoading && <p className="text-xs text-muted-foreground mb-2">Memuat faktur terbaru...</p>}
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b text-left">
-                          <th className="px-2 py-2">Invoice</th>
-                          <th className="px-2 py-2">Customer</th>
+                          <th className="px-2 py-2">Faktur</th>
+                          <th className="px-2 py-2">Pelanggan</th>
                           <th className="px-2 py-2">Date</th>
-                          <th className="px-2 py-2">Payment</th>
-                          <th className="px-2 py-2">Input By</th>
+                          <th className="px-2 py-2">Pembayaran</th>
+                          <th className="px-2 py-2">Diinput Oleh</th>
                           <th className="px-2 py-2 text-right">Total</th>
                           <th className="px-2 py-2 text-right">Detail</th>
                         </tr>
@@ -238,21 +238,21 @@ export default function InvoiceDataPage() {
                             <td className="px-2 py-2 text-right">{formatCurrency(invoice.grandTotal)}</td>
                             <td className="px-2 py-2 text-right">
                               <Button type="button" size="sm" variant="outline" onClick={() => setSelectedInvoiceId(invoice.id)}>
-                                View Detail
+                                Lihat Detail
                               </Button>
                             </td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
-                    {!data?.invoices.length && <p className="py-6 text-center text-muted-foreground">No invoice data found yet.</p>}
+                    {!data?.invoices.length && <p className="py-6 text-center text-muted-foreground">Belum ada data faktur.</p>}
                   </div>
                 </CardContent>
               </Card>
 
               <Card className="lg:col-span-2">
                 <CardHeader>
-                  <CardTitle>Payment Method Mix</CardTitle>
+                  <CardTitle>Komposisi Metode Pembayaran</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {paymentMethodSummary.map((payment) => (
@@ -262,7 +262,7 @@ export default function InvoiceDataPage() {
                     </div>
                   ))}
                   {!paymentMethodSummary.length && (
-                    <p className="text-sm text-muted-foreground">Payment method data will appear after the first invoice.</p>
+                    <p className="text-sm text-muted-foreground">Data metode pembayaran akan muncul setelah ada faktur.</p>
                   )}
                 </CardContent>
               </Card>
@@ -271,7 +271,7 @@ export default function InvoiceDataPage() {
 
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
-                Page {data?.pagination.page || 1} of {data?.pagination.totalPages || 1}
+                Halaman {data?.pagination.page || 1} dari {data?.pagination.totalPages || 1}
               </p>
               <div className="flex gap-2">
                 <Button
@@ -280,7 +280,7 @@ export default function InvoiceDataPage() {
                   onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
                   disabled={!data?.pagination.hasPrev || isTableLoading}
                 >
-                  Previous
+                  Sebelumnya
                 </Button>
                 <Button
                   type="button"
@@ -288,7 +288,7 @@ export default function InvoiceDataPage() {
                   onClick={() => setPage((prev) => prev + 1)}
                   disabled={!data?.pagination.hasNext || isTableLoading}
                 >
-                  Next
+                  Berikutnya
                 </Button>
               </div>
             </div>
@@ -296,7 +296,7 @@ export default function InvoiceDataPage() {
             {selectedInvoice && (
               <Card className="font-mono invoice-print-compact">
                 <CardHeader>
-                  <CardTitle>Invoice Detail - {selectedInvoice.invoiceNumber}</CardTitle>
+                  <CardTitle>Detail Faktur - {selectedInvoice.invoiceNumber}</CardTitle>
                   <p className="text-sm text-muted-foreground">
                     {selectedInvoice.customerName} • {new Date(selectedInvoice.createdAt).toLocaleString()}
                   </p>
@@ -316,11 +316,11 @@ export default function InvoiceDataPage() {
                   <table className="w-full border-collapse text-sm">
                     <thead>
                       <tr className="border-b text-left">
-                        <th className="py-2">Product</th>
+                        <th className="py-2">Produk</th>
                         <th className="py-2">SKU</th>
-                        <th className="py-2">Supplier</th>
+                        <th className="py-2">Pemasok</th>
                         <th className="py-2">Qty</th>
-                        <th className="py-2">Price</th>
+                        <th className="py-2">Harga</th>
                         <th className="py-2 text-right">Line Total</th>
                       </tr>
                     </thead>
@@ -339,18 +339,18 @@ export default function InvoiceDataPage() {
                   </table>
 
                   <div className="mt-4 text-right space-y-1 text-sm">
-                    <p>Payment Method: {selectedInvoice.paymentMethod}</p>
-                    <p>Input By: {selectedInvoice.createdByName || "admin"}</p>
+                    <p>Metode Pembayaran: {selectedInvoice.paymentMethod}</p>
+                    <p>Diinput Oleh: {selectedInvoice.createdByName || "admin"}</p>
                     <p>Subtotal: {formatCurrency(selectedInvoice.totalAmount)}</p>
-                    <p>Promo Code: {selectedInvoice.promoCode || "-"}</p>
+                    <p>Kode Promo: {selectedInvoice.promoCode || "-"}</p>
                     <p>
                       Discount ({selectedInvoice.discountType === "percentage" ? `${selectedInvoice.discountValue || 0}%` : formatCurrency(selectedInvoice.discountValue || 0)}): -
                       {formatCurrency(selectedInvoice.discountAmount || 0)}
                     </p>
                     <p>Tax ({selectedInvoice.taxRate}%): {formatCurrency(selectedInvoice.taxAmount)}</p>
-                    <p className="font-semibold text-base">Grand Total: {formatCurrency(selectedInvoice.grandTotal)}</p>
-                    <p>Amount Paid: {formatCurrency(selectedInvoice.amountPaid)}</p>
-                    <p>Return/Change: {formatCurrency(selectedInvoice.changeAmount)}</p>
+                    <p className="font-semibold text-base">Total Akhir: {formatCurrency(selectedInvoice.grandTotal)}</p>
+                    <p>Jumlah Dibayar: {formatCurrency(selectedInvoice.amountPaid)}</p>
+                    <p>Kembalian: {formatCurrency(selectedInvoice.changeAmount)}</p>
                     <p>Keterangan: {selectedInvoice.keterangan || "-"}</p>
                   </div>
 
@@ -358,7 +358,7 @@ export default function InvoiceDataPage() {
                     <div className="text-center min-w-56">
                       <p>{new Date(selectedInvoice.createdAt).toLocaleDateString("id-ID")}</p>
                       <p className="mb-16">Mengetahui,</p>
-                      <p className="font-semibold underline">{selectedInvoice.signatureName || "Koperasi"}</p>
+                      <p className="font-semibold underline">{selectedInvoice.signatureName || "Ari Wibowo"}</p>
                     </div>
                   </div>
                 </CardContent>
