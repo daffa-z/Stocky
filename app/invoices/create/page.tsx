@@ -74,7 +74,7 @@ export default function InvoicesPage() {
   const [paymentMethod, setPaymentMethod] = useState<(typeof PAYMENT_METHODS)[number]>("Tunai");
   const [bankName, setBankName] = useState<(typeof BANK_OPTIONS)[number] | "">("");
   const [keterangan, setKeterangan] = useState("");
-  const [signatureName, setSignatureName] = useState("Koperasi");
+  const [signatureName, setSignatureName] = useState("Ari Wibowo");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdInvoice, setCreatedInvoice] = useState<CreatedInvoice | null>(null);
   const [isFinished, setIsFinished] = useState(false);
@@ -191,7 +191,7 @@ export default function InvoicesPage() {
       setPaymentMethod("Tunai");
       setBankName("");
       setKeterangan("");
-      setSignatureName("Koperasi");
+      setSignatureName("Ari Wibowo");
       setIsFinished(false);
       await loadProducts();
 
@@ -242,36 +242,36 @@ export default function InvoicesPage() {
         <Card className="print:hidden">
           <CardContent className="py-4 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-medium">Need a quick operational review?</p>
-              <p className="text-xs text-muted-foreground">Use the data pages to track invoice movement and purchasing behavior.</p>
+              <p className="text-sm font-medium">Butuh ringkasan operasional cepat?</p>
+              <p className="text-xs text-muted-foreground">Gunakan halaman data untuk memantau pergerakan faktur dan perilaku pembelian.</p>
             </div>
             <div className="flex gap-2">
               <Link href="/invoices/data">
-                <Button variant="outline">Invoice Data</Button>
+                <Button variant="outline">Data Faktur</Button>
               </Link>
               <Link href="/invoices/purchasing">
-                <Button>Purchasing Review <ArrowRight className="h-4 w-4 ml-1" /></Button>
+                <Button>Tinjauan Pembelian <ArrowRight className="h-4 w-4 ml-1" /></Button>
               </Link>
             </div>
           </CardContent>
         </Card>
         <Card className="print:hidden">
           <CardHeader>
-            <CardTitle>Create Invoice</CardTitle>
+            <CardTitle>Buat Faktur</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="customerName">Customer Name</Label>
+              <Label htmlFor="customerName">Nama Pelanggan</Label>
               <Input
                 id="customerName"
-                placeholder="Walk-in Customer"
+                placeholder="Pelanggan Umum"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
               />
             </div>
 
         <div className="space-y-2">
-                      <Label>Payment Method</Label>
+                      <Label>Metode Pembayaran</Label>
                       <div className="flex flex-wrap gap-2">
                         {PAYMENT_METHODS.map((method) => (
                           <Button
@@ -320,9 +320,9 @@ export default function InvoicesPage() {
                 </DialogTrigger>
                 <DialogContent className="max-w-5xl">
                   <DialogHeader>
-                    <DialogTitle>Select Product</DialogTitle>
+                  <DialogTitle>Pilih Produk</DialogTitle>
                     <DialogDescription>
-                      Search and pick product from table, then add each item one by one to invoice.
+                      Cari dan pilih produk dari tabel, lalu tambahkan item satu per satu ke faktur.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-3">
@@ -488,7 +488,7 @@ export default function InvoicesPage() {
               <Label htmlFor="signatureName">Nama Penanda Tangan (untuk tanda tangan PDF)</Label>
               <Input
                 id="signatureName"
-                placeholder="Koperasi"
+                placeholder="Ari Wibowo"
                 value={signatureName}
                 onChange={(e) => setSignatureName(e.target.value)}
               />
@@ -504,7 +504,7 @@ export default function InvoicesPage() {
             </div>
             <div className="flex justify-end">
               <Button type="button" onClick={handleCreateInvoiceClick} disabled={isSubmitting}>
-                {isSubmitting ? "Creating..." : "Create Invoice"}
+                {isSubmitting ? "Membuat..." : "Buat Faktur"}
               </Button>
             </div>  
           </CardContent>
@@ -517,9 +517,9 @@ export default function InvoicesPage() {
               <DialogDescription>Pastikan data sudah benar sebelum membuat invoice.</DialogDescription>
             </DialogHeader>
             <div className="space-y-3 text-sm">
-              <p><span className="font-medium">Customer:</span> {customerName || "Walk-in Customer"}</p>
-              <p><span className="font-medium">Payment:</span> {paymentMethod} {bankName ? `- ${bankName}` : ""}</p>
-              <p><span className="font-medium">Penanda Tangan:</span> {signatureName || "Koperasi"}</p>
+              <p><span className="font-medium">Pelanggan:</span> {customerName || "Pelanggan Umum"}</p>
+              <p><span className="font-medium">Pembayaran:</span> {paymentMethod} {bankName ? `- ${bankName}` : ""}</p>
+              <p><span className="font-medium">Penanda Tangan:</span> {signatureName || "Ari Wibowo"}</p>
               <div className="rounded-md border p-3 space-y-1">
                 <p>Subtotal: {formatCurrency(estimatedTotal)}</p>
                 <p>Discount: -{formatCurrency(estimatedDiscountAmount)}</p>
@@ -569,7 +569,7 @@ export default function InvoicesPage() {
           <Card className="print:font-mono invoice-print-compact">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>Invoice {createdInvoice.invoiceNumber}</CardTitle>
+                <CardTitle>Faktur {createdInvoice.invoiceNumber}</CardTitle>
                 <p className="text-sm text-muted-foreground">
                   {createdInvoice.customerName} • {new Date(createdInvoice.createdAt).toLocaleString()}
                 </p>
@@ -642,7 +642,7 @@ export default function InvoicesPage() {
                 <div className="text-center min-w-56">
                   <p>{new Date(createdInvoice.createdAt).toLocaleDateString("id-ID")}</p>
                   <p className="mb-16">Mengetahui,</p>
-                  <p className="font-semibold underline">{createdInvoice.signatureName || "Koperasi"}</p>
+                  <p className="font-semibold underline">{createdInvoice.signatureName || "Ari Wibowo"}</p>
                 </div>
               </div>
             </CardContent>

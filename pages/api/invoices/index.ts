@@ -85,7 +85,7 @@ const normalizeInvoice = (invoice: any): NormalizedInvoice => ({
   createdByName: invoice.createdByName || "admin",
   createdByEmail: invoice.createdByEmail || "",
   keterangan: invoice.keterangan,
-  signatureName: typeof invoice.signatureName === "string" ? invoice.signatureName : "Koperasi",
+  signatureName: typeof invoice.signatureName === "string" ? invoice.signatureName : "Ari Wibowo",
   createdAt: new Date(invoice.createdAt).toISOString(),
   items: Array.isArray(invoice.items)
     ? invoice.items.map((item: any): NormalizedInvoiceItem => ({
@@ -398,7 +398,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         paymentMethod: paymentMethod?.trim() || "Cash",
         bankName: bankName?.trim() || "",
         keterangan: keterangan?.trim() || "",
-        signatureName: signatureName?.trim() || "Koperasi",
+        signatureName: signatureName?.trim() || "Ari Wibowo",
         totalAmount,
         createdAt: new Date(),
       };

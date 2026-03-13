@@ -121,8 +121,8 @@ export default function InvoicePurchasingPage() {
         setMonthlySalesData(monthlySalesResponse.data);
       } catch (error: any) {
         toast({
-          title: "Failed to load purchasing data",
-          description: error?.response?.data?.error || "Please try again in a moment.",
+          title: "Gagal memuat data pembelian",
+          description: error?.response?.data?.error || "Silakan coba lagi sebentar lagi.",
           variant: "destructive",
         });
       } finally {
@@ -154,8 +154,8 @@ export default function InvoicePurchasingPage() {
         setSelectedInvoiceId(null);
       } catch (error: any) {
         toast({
-          title: "Failed to load invoice records",
-          description: error?.response?.data?.error || "Please try again in a moment.",
+          title: "Gagal memuat data faktur",
+          description: error?.response?.data?.error || "Silakan coba lagi sebentar lagi.",
           variant: "destructive",
         });
       } finally {
@@ -244,76 +244,76 @@ export default function InvoicePurchasingPage() {
       <div className="space-y-6 p-4 lg:p-0">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-2xl font-bold">Purchasing Review from Invoice Data</h2>
-            <p className="text-sm text-muted-foreground">Understand which suppliers and products are moving the fastest.</p>
+            <h2 className="text-2xl font-bold">Tinjauan Pembelian dari Data Faktur</h2>
+            <p className="text-sm text-muted-foreground">Pahami pemasok dan produk yang pergerakannya paling cepat.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="outline" onClick={downloadMonthlySalesPdf}>Unduh PDF Laporan Penjualan</Button>
             <Button type="button" onClick={downloadMonthlySalesXlsx}>Unduh XLSX Laporan Penjualan</Button>
             <Link href="/invoices/data">
-              <Button variant="outline">Invoice Data</Button>
+              <Button variant="outline">Data Faktur</Button>
             </Link>
             <Link href="/invoices/create">
-              <Button>Create Invoice</Button>
+              <Button>Buat Faktur</Button>
             </Link>
           </div>
         </div>
 
         {isInitialLoading ? (
           <Card>
-            <CardContent className="py-10 text-center text-sm text-muted-foreground">Loading purchasing insights...</CardContent>
+            <CardContent className="py-10 text-center text-sm text-muted-foreground">Memuat insight pembelian...</CardContent>
           </Card>
         ) : (
           <>
             <div className="grid gap-4 lg:grid-cols-3">
               <Card>
                 <CardHeader>
-                  <CardTitle>Supplier Contribution</CardTitle>
+                  <CardTitle>Kontribusi Pemasok</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {data?.supplierBreakdown.map((supplier) => (
                     <div key={supplier.supplier} className="rounded border px-3 py-2">
                       <p className="font-medium">{supplier.supplier}</p>
-                      <p className="text-sm text-muted-foreground">Items sold: {supplier.quantity}</p>
-                      <p className="text-sm">Revenue impact: {formatCurrency(supplier.revenue)}</p>
+                      <p className="text-sm text-muted-foreground">Produk terjual: {supplier.quantity}</p>
+                      <p className="text-sm">Dampak pendapatan: {formatCurrency(supplier.revenue)}</p>
                     </div>
                   ))}
                   {!data?.supplierBreakdown.length && (
-                    <p className="text-sm text-muted-foreground">Supplier contribution appears after invoice activity.</p>
+                    <p className="text-sm text-muted-foreground">Kontribusi pemasok muncul setelah ada aktivitas faktur.</p>
                   )}
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Top Products by Quantity</CardTitle>
+                  <CardTitle>Produk Teratas berdasarkan Kuantitas</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {data?.topProducts.map((product) => (
                     <div key={`${product.productId}-${product.sku}`} className="rounded border px-3 py-2">
                       <p className="font-medium">{product.name}</p>
                       <p className="text-sm text-muted-foreground">SKU: {product.sku || "-"}</p>
-                      <p className="text-sm">Qty sold: {product.quantity}</p>
-                      <p className="text-sm">Revenue: {formatCurrency(product.revenue)}</p>
+                      <p className="text-sm">Qty terjual: {product.quantity}</p>
+                      <p className="text-sm">Pendapatan: {formatCurrency(product.revenue)}</p>
                     </div>
                   ))}
-                  {!data?.topProducts.length && <p className="text-sm text-muted-foreground">Top products will appear after sales data exists.</p>}
+                  {!data?.topProducts.length && <p className="text-sm text-muted-foreground">Produk teratas muncul setelah data penjualan tersedia.</p>}
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Daily Movement</CardTitle>
+                  <CardTitle>Pergerakan Harian</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {dailyTrend.map((day) => (
                     <div key={day.date} className="rounded border px-3 py-2">
                       <p className="font-medium">{day.date}</p>
-                      <p className="text-sm text-muted-foreground">Units moved: {day.quantity}</p>
-                      <p className="text-sm">Revenue: {formatCurrency(day.revenue)}</p>
+                      <p className="text-sm text-muted-foreground">Unit bergerak: {day.quantity}</p>
+                      <p className="text-sm">Pendapatan: {formatCurrency(day.revenue)}</p>
                     </div>
                   ))}
-                  {!dailyTrend.length && <p className="text-sm text-muted-foreground">Daily trend appears once invoices are created.</p>}
+                  {!dailyTrend.length && <p className="text-sm text-muted-foreground">Tren harian muncul setelah faktur dibuat.</p>}
                 </CardContent>
               </Card>
             </div>
@@ -363,7 +363,7 @@ export default function InvoicePurchasingPage() {
               <CardContent className="pt-6">
                 <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
                   <Input
-                    placeholder="Search invoice/customer/promo/payment..."
+                    placeholder="Cari faktur/pelanggan/promo/pembayaran..."
                     value={search}
                     onChange={(e) => {
                       setSearch(e.target.value);
@@ -372,7 +372,7 @@ export default function InvoicePurchasingPage() {
                     className="md:max-w-md"
                   />
                   <p className="text-sm text-muted-foreground">
-                    Showing {data?.invoices.length || 0} of {data?.pagination.totalCount || 0} invoices
+                    Menampilkan {data?.invoices.length || 0} dari {data?.pagination.totalCount || 0} faktur
                   </p>
                 </div>
               </CardContent>
@@ -382,8 +382,8 @@ export default function InvoicePurchasingPage() {
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between gap-2">
-                  <CardTitle>Invoice Records (with Detail)</CardTitle>
-                  {isTableLoading && <p className="text-xs text-muted-foreground">Refreshing table...</p>}
+                  <CardTitle>Data Faktur (dengan Detail)</CardTitle>
+                  {isTableLoading && <p className="text-xs text-muted-foreground">Memperbarui tabel...</p>}
                 </div>
               </CardHeader>
               <CardContent>
@@ -391,13 +391,13 @@ export default function InvoicePurchasingPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b text-left">
-                        <th className="px-2 py-2">Invoice</th>
+                        <th className="px-2 py-2">Faktur</th>
                         <th className="px-2 py-2">Date</th>
                         <th className="px-2 py-2">Promo</th>
-                        <th className="px-2 py-2 text-right">Discount</th>
-                        <th className="px-2 py-2 text-right">Tax</th>
-                        <th className="px-2 py-2 text-right">Grand Total</th>
-                        <th className="px-2 py-2 text-right">Action</th>
+                        <th className="px-2 py-2 text-right">Diskon</th>
+                        <th className="px-2 py-2 text-right">Pajak</th>
+                        <th className="px-2 py-2 text-right">Total Akhir</th>
+                        <th className="px-2 py-2 text-right">Aksi</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -411,7 +411,7 @@ export default function InvoicePurchasingPage() {
                           <td className="px-2 py-2 text-right">{formatCurrency(invoice.grandTotal)}</td>
                           <td className="px-2 py-2 text-right">
                             <Button type="button" size="sm" variant="outline" onClick={() => setSelectedInvoiceId(invoice.id)}>
-                              View Detail
+                              Lihat Detail
                             </Button>
                           </td>
                         </tr>
@@ -419,7 +419,7 @@ export default function InvoicePurchasingPage() {
                       {!data?.invoices.length && (
                         <tr>
                           <td colSpan={7} className="px-2 py-4 text-center text-muted-foreground">
-                            Tidak ada data invoice untuk ditampilkan.
+                            Tidak ada data faktur untuk ditampilkan.
                           </td>
                         </tr>
                       )}
@@ -432,7 +432,7 @@ export default function InvoicePurchasingPage() {
 
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
-                Page {data?.pagination.page || 1} of {data?.pagination.totalPages || 1}
+                Halaman {data?.pagination.page || 1} dari {data?.pagination.totalPages || 1}
               </p>
               <div className="flex gap-2">
                 <Button
@@ -441,7 +441,7 @@ export default function InvoicePurchasingPage() {
                   onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
                   disabled={!data?.pagination.hasPrev || isTableLoading}
                 >
-                  Previous
+                  Sebelumnya
                 </Button>
                 <Button
                   type="button"
@@ -449,7 +449,7 @@ export default function InvoicePurchasingPage() {
                   onClick={() => setPage((prev) => prev + 1)}
                   disabled={!data?.pagination.hasNext || isTableLoading}
                 >
-                  Next
+                  Berikutnya
                 </Button>
               </div>
             </div>
@@ -457,25 +457,25 @@ export default function InvoicePurchasingPage() {
             {selectedInvoice && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Purchasing Impact Detail - {selectedInvoice.invoiceNumber}</CardTitle>
+                  <CardTitle>Detail Dampak Pembelian - {selectedInvoice.invoiceNumber}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                    <p><span className="font-medium">Customer:</span> {selectedInvoice.customerName}</p>
-                    <p><span className="font-medium">Payment:</span> {selectedInvoice.paymentMethod}</p>
+                    <p><span className="font-medium">Pelanggan:</span> {selectedInvoice.customerName}</p>
+                    <p><span className="font-medium">Pembayaran:</span> {selectedInvoice.paymentMethod}</p>
                     <p><span className="font-medium">Promo:</span> {selectedInvoice.promoCode || "-"}</p>
-                    <p><span className="font-medium">Discount:</span> {formatCurrency(selectedInvoice.discountAmount || 0)}</p>
-                    <p><span className="font-medium">Tax:</span> {formatCurrency(selectedInvoice.taxAmount)}</p>
-                    <p><span className="font-medium">Grand Total:</span> {formatCurrency(selectedInvoice.grandTotal)}</p>
+                    <p><span className="font-medium">Diskon:</span> {formatCurrency(selectedInvoice.discountAmount || 0)}</p>
+                    <p><span className="font-medium">Pajak:</span> {formatCurrency(selectedInvoice.taxAmount)}</p>
+                    <p><span className="font-medium">Total Akhir:</span> {formatCurrency(selectedInvoice.grandTotal)}</p>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b text-left">
-                          <th className="px-2 py-2">Supplier</th>
-                          <th className="px-2 py-2">Product</th>
+                          <th className="px-2 py-2">Pemasok</th>
+                          <th className="px-2 py-2">Produk</th>
                           <th className="px-2 py-2">Qty</th>
-                          <th className="px-2 py-2 text-right">Revenue</th>
+                          <th className="px-2 py-2 text-right">Pendapatan</th>
                         </tr>
                       </thead>
                       <tbody>
