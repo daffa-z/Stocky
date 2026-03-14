@@ -113,7 +113,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         role: result.userRole || "USER",
         lokasi: result.userLokasi || "PUSAT",
       });
-      Cookies.set("session_id", result.sessionId);
+      Cookies.set("session_id", result.sessionId, {
+        path: "/",
+        sameSite: "lax",
+      });
       // Debug log - only log in development
       if (process.env.NODE_ENV === 'development') {
         console.log("Login successful, session ID set:", result.sessionId);
@@ -153,7 +156,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const clearAuthData = () => {
     setIsLoggedIn(false);
     setUser(null);
-    Cookies.remove("session_id");
+    Cookies.remove("session_id", { path: "/" });
     // Clear attributes from local storage
     localStorage.setItem("isAuth", "false");
     localStorage.setItem("isLoggedIn", "false");
