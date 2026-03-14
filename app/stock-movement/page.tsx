@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import axiosInstance from "@/utils/axiosInstance";
+import { openAndPrintTypewriterReport } from "@/utils/pdfReportTemplate";
 import { useEffect, useMemo, useState } from "react";
 
 interface StockMovement {
@@ -82,6 +83,58 @@ export default function StockMovementPage() {
   }, [page, search, toast]);
 
   const selectedProduct = useMemo(() => allProducts.find((product) => product.id === productId), [allProducts, productId]);
+
+
+  const printStockLeftReport = () => {
+    const sortedProducts = [...allProducts].sort((a, b) => a.name.localeCompare(b.name));
+
+    if (!sortedProducts.length) {
+      toast({
+        title: "Data produk kosong",
+        description: "Tidak ada data produk untuk dicetak.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const generatedAt = new Date().toLocaleString("id-ID", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const totalStock = sortedProducts.reduce((sum, product) => sum + product.quantity, 0);
+
+    const didOpen = openAndPrintTypewriterReport({
+      documentTitle: "Laporan Sisa Stock Produk",
+      reportHeading: "Laporan Sisa Stock Produk",
+      reportSubheading: "Stock Tersisa di Penyimpanan",
+      generatedAt,
+      tableHeaders: ["Nama Product", "SKU", "Kategori", "Supplier", "Satuan", "Stock Tersisa"],
+      tableRows: sortedProducts.map((product) => [
+        product.name,
+        product.sku,
+        product.category || "-",
+        product.supplier || "-",
+        product.unit || "pcs",
+        String(product.quantity),
+      ]),
+      summaryLines: [
+        `Total item produk: ${sortedProducts.length}`,
+        `Total stock tersisa: ${totalStock}`,
+      ],
+    });
+
+    if (!didOpen) {
+      toast({
+        title: "Popup diblokir",
+        description: "Izinkan popup browser agar laporan PDF dapat dibuat.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const submitMovement = async () => {
     if (!productId) {
@@ -183,8 +236,11 @@ export default function StockMovementPage() {
         </Card>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>Riwayat Pergerakan Stock</CardTitle>
+            <Button type="button" variant="outline" onClick={printStockLeftReport}>
+              Cetak Laporan
+            </Button>
           </CardHeader>
           <CardContent className="space-y-3">
             <Input

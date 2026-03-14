@@ -1,6 +1,7 @@
 export const openAndPrintTypewriterReport = ({
   documentTitle,
   reportHeading,
+  reportSubheading = "Rincian Transaksi Penjualan",
   generatedAt,
   tableHeaders,
   tableRows,
@@ -8,6 +9,7 @@ export const openAndPrintTypewriterReport = ({
 }: {
   documentTitle: string;
   reportHeading: string;
+  reportSubheading?: string;
   generatedAt: string;
   tableHeaders: string[];
   tableRows: string[][];
@@ -53,7 +55,7 @@ export const openAndPrintTypewriterReport = ({
           <img src="${headerImageUrl}" alt="Header Koperasi" style="width:100%; height:auto; display:block;" />
         </div>
         <h2 style="margin: 0 0 6px; text-align: center;">${reportHeading}</h2>
-        <h3 style="margin: 0 0 18px; text-align: center;">Rincian Transaksi Penjualan</h3>
+        <h3 style="margin: 0 0 18px; text-align: center;">${reportSubheading}</h3>
         <p style="margin: 0 0 12px;">Tanggal cetak: ${generatedAt}</p>
         <table style="border-collapse: collapse; width: 100%; font-size: 14px;">
           <thead>
