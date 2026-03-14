@@ -57,6 +57,7 @@ export default function StockMovementPage() {
   const [invoiceReference, setInvoiceReference] = useState("");
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [signatureName, setSignatureName] = useState("Ari Wibowo");
 
   useEffect(() => {
     loadProducts();
@@ -83,7 +84,6 @@ export default function StockMovementPage() {
   }, [page, search, toast]);
 
   const selectedProduct = useMemo(() => allProducts.find((product) => product.id === productId), [allProducts, productId]);
-
 
   const printStockLeftReport = () => {
     const sortedProducts = [...allProducts].sort((a, b) => a.name.localeCompare(b.name));
@@ -125,6 +125,7 @@ export default function StockMovementPage() {
         `Total item produk: ${sortedProducts.length}`,
         `Total stock tersisa: ${totalStock}`,
       ],
+      signatureName: signatureName.trim() || "Ari Wibowo",
     });
 
     if (!didOpen) {
@@ -251,6 +252,17 @@ export default function StockMovementPage() {
                 setPage(1);
               }}
             />
+
+            <div className="space-y-2">
+              <Label htmlFor="stockMovementSignatureName">Nama Penanda Tangan (untuk tanda tangan PDF)</Label>
+              <Input
+                id="stockMovementSignatureName"
+                placeholder="Ari Wibowo"
+                value={signatureName}
+                onChange={(e) => setSignatureName(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">Nama ini akan muncul di bagian tanda tangan pada hasil Print / Save PDF.</p>
+            </div>
 
             {isLoading ? (
               <p className="text-sm text-muted-foreground">Loading data pergerakan...</p>

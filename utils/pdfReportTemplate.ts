@@ -6,6 +6,7 @@ export const openAndPrintTypewriterReport = ({
   tableHeaders,
   tableRows,
   summaryLines = [],
+  signatureName = "Koperasi",
 }: {
   documentTitle: string;
   reportHeading: string;
@@ -14,6 +15,7 @@ export const openAndPrintTypewriterReport = ({
   tableHeaders: string[];
   tableRows: string[][];
   summaryLines?: string[];
+  signatureName?: string;
 }) => {
   const printWindow = window.open("", "_blank", "width=1100,height=750");
   if (!printWindow) {
@@ -70,7 +72,7 @@ export const openAndPrintTypewriterReport = ({
           <div style="text-align: center; min-width: 220px;">
             <p style="margin:0;">${new Date().toLocaleDateString("id-ID")}</p>
             <p style="margin:0 0 64px;">Mengetahui,</p>
-            <p style="margin:0; font-weight: 700; text-decoration: underline;">Koperasi</p>
+            <p style="margin:0; font-weight: 700; text-decoration: underline;">${signatureName}</p>
           </div>
         </div>
       </body>
