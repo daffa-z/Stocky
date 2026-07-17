@@ -1,6 +1,8 @@
 "use client";
 
+import { useAuth } from "@/app/authContext";
 import AuthenticatedLayout from "@/app/components/AuthenticatedLayout";
+import { Product } from "@/app/types";
 import { useProductStore } from "@/app/useProductStore";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -63,8 +65,9 @@ const formatCurrency = (value: number) =>
   }).format(value);
 
 export default function InvoicesPage() {
-  const { allProducts, loadProducts } = useProductStore();
+  const { allProducts, categories, suppliers, loadProducts, loadCategories, loadSuppliers } = useProductStore();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const [customerName, setCustomerName] = useState("");
   const [items, setItems] = useState<InvoiceItemForm[]>([]);
@@ -83,8 +86,8 @@ export default function InvoicesPage() {
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [isProductSelectorOpen, setIsProductSelectorOpen] = useState(false);
   useEffect(() => {
-    loadProducts();
-  }, [loadProducts]);
+    void Promise.all([loadProducts(), loadCategories(), loadSuppliers()]);
+  }, [loadCategories, loadProducts, loadSuppliers]);
 
   const addProductToInvoice = (productId: string) => {
     setItems((prev) => {
@@ -110,21 +113,85 @@ export default function InvoicesPage() {
     );
   };
 
-  const filteredProducts = useMemo(() => {
-    const query = productSearch.trim().toLowerCase();
-    if (!query) return allProducts;
-    return allProducts.filter((product) => {
-      const name = (product.name || "").toLowerCase();
-      const sku = (product.sku || "").toLowerCase();
-      const supplier = (product.supplier || "").toLowerCase();
-      return name.includes(query) || sku.includes(query) || supplier.includes(query);
-    });
-  }, [allProducts, productSearch]);
+    const template = "nama produk,sku,pemasok,qty,harga\nContoh Produk,SKU-001,Contoh Pemasok,2,15000\n";
+  const getOrCreateImportCategory = async () => {
+    const existingCategory = categories[0];
+    if (existingCategory) return existingCategory.id;
 
-  const estimatedTotal = useMemo(() => {
-    return items.reduce((sum, item) => {
-      const product = allProducts.find((p) => p.id === item.productId);
-      if (!product) return sum;
+    const response = await axiosInstance.post("/categories", { name: "Produk Impor", userId: user?.id });
+    return response.data.id as string;
+  };
+
+  const getOrCreateSupplier = async (supplierName: string, supplierByName: Map<string, string>) => {
+    const normalizedName = supplierName.toLowerCase();
+    const existingSupplierId = supplierByName.get(normalizedName);
+    if (existingSupplierId) return existingSupplierId;
+
+    const response = await axiosInstance.post("/suppliers", { name: supplierName, userId: user?.id });
+    const supplierId = response.data.id as string;
+    supplierByName.set(normalizedName, supplierId);
+    return supplierId;
+  };
+
+      const supplierByName = new Map(suppliers.map((supplier) => [supplier.name.trim().toLowerCase(), supplier.id]));
+      let categoryId: string | undefined;
+      let createdProductCount = 0;
+      for (const [index, row] of rows.entries()) {
+        const name = String(fields.namaproduk ?? fields.namabarang ?? fields.productname ?? fields.product ?? fields.name ?? "").trim();
+        const sku = String(fields.sku ?? "").trim();
+        const supplierName = String(fields.pemasok ?? fields.supplier ?? "").trim();
+        const quantity = Number(fields.qty ?? fields.quantity ?? "");
+        const price = Number(fields.harga ?? fields.price ?? "");
+        if (!name || !sku || !supplierName) {
+          issues.push({ row: rowNumber, message: "Nama produk, SKU, dan pemasok wajib diisi." });
+          continue;
+        if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isInteger(quantity)) {
+          issues.push({ row: rowNumber, message: "Qty harus berupa bilangan bulat lebih dari 0." });
+          continue;
+        }
+        if (!Number.isFinite(price) || price < 0) {
+          issues.push({ row: rowNumber, message: "Harga harus berupa angka 0 atau lebih." });
+          continue;
+        }
+
+        const product = productsBySku.get(sku.toLowerCase()) || productsByName.get(name.toLowerCase());
+        if (product) {
+          importedItems.set(product.id, (importedItems.get(product.id) || 0) + quantity);
+          continue;
+        }
+
+        try {
+          categoryId ??= await getOrCreateImportCategory();
+          const supplierId = await getOrCreateSupplier(supplierName, supplierByName);
+          const newProductPayload: Product = {
+            id: "",
+            createdAt: new Date(),
+            userId: user?.id || "",
+            name,
+            sku,
+            supplierId,
+            categoryId,
+            quantity,
+            price,
+            buyPrice: price,
+            sellPrice: price,
+            hetPrice: price,
+            unit: "pcs",
+            status: quantity > 20 ? "Tersedia" : "Stok Menipis",
+          };
+          const response = await axiosInstance.post("/products", newProductPayload);
+          const newProduct = response.data as Product;
+          productsBySku.set(sku.toLowerCase(), newProduct);
+          productsByName.set(name.toLowerCase(), newProduct);
+          importedItems.set(newProduct.id, (importedItems.get(newProduct.id) || 0) + quantity);
+          createdProductCount += 1;
+        } catch {
+          issues.push({ row: rowNumber, message: `Produk "${name}" gagal dibuat.` });
+        }
+      }
+        await Promise.all([loadProducts(), loadCategories(), loadSuppliers()]);
+        toast({ title: "Produk berhasil diimpor", description: `${importedItems.size} produk ditambahkan ke faktur dari ${file.name}.${createdProductCount ? ` ${createdProductCount} produk baru dibuat.` : ""}${issues.length ? ` ${issues.length} baris perlu diperiksa.` : ""}` });
+        toast({ title: "Tidak ada produk yang diimpor", description: "Periksa kolom dan data pada file.", variant: "destructive" });
       return sum + product.price * item.quantity;
     }, 0);
   }, [items, allProducts]);
@@ -418,10 +485,9 @@ export default function InvoicesPage() {
                 <p className="text-sm text-muted-foreground">No items selected yet. Open Product Selector to add items.</p>
               ) : (
                 <div className="space-y-2">
-                  {items.map((item) => {
-                    const selectedProduct = allProducts.find((product) => product.id === item.productId);
-                    if (!selectedProduct) return null;
-
+                    <p className="text-sm text-muted-foreground">Unggah CSV untuk file kecil atau Excel (.xlsx/.xls). Produk yang belum ada akan dibuat otomatis.</p>
+                  disabled={isImporting}
+              <p className="text-xs text-muted-foreground">Kolom wajib: <span className="font-medium">nama produk</span>, <span className="font-medium">sku</span>, <span className="font-medium">pemasok</span>, <span className="font-medium">qty</span>, dan <span className="font-medium">harga</span>. Harga produk baru dipakai sebagai harga beli, harga jual, dan HET.</p>
                     return (
                       <div key={item.productId} className="grid grid-cols-12 gap-2 items-end rounded-md border p-2">
                         <div className="col-span-7">
