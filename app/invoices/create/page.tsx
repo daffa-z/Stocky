@@ -9,17 +9,23 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import axiosInstance from "@/utils/axiosInstance";
 import { openAndPrintTypewriterReport } from "@/utils/pdfReportTemplate";
-import { ArrowRight, PlusCircle, Printer, Trash2 } from "lucide-react";
+import { ArrowRight, FileSpreadsheet, PlusCircle, Printer, Trash2, X } from "lucide-react";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import Link from "next/link";
 import Image from "next/image";
 import React, { useEffect, useMemo, useState } from "react";
+import * as XLSX from "xlsx";
 
 interface InvoiceItemForm {
   productId: string;
   quantity: number;
 }
+
+type ImportIssue = {
+  row: number;
+  message: string;
+};
 
 interface CreatedInvoice {
   id: string;
@@ -82,6 +88,9 @@ export default function InvoicesPage() {
   const [isFinished, setIsFinished] = useState(false);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [isProductSelectorOpen, setIsProductSelectorOpen] = useState(false);
+  const [importFileName, setImportFileName] = useState("");
+  const [importIssues, setImportIssues] = useState<ImportIssue[]>([]);
+  const [isImporting, setIsImporting] = useState(false);
   useEffect(() => {
     loadProducts();
   }, [loadProducts]);
@@ -108,6 +117,89 @@ export default function InvoicesPage() {
         item.productId === productId ? { ...item, quantity: Math.max(Number(quantity) || 1, 1) } : item
       )
     );
+  };
+
+  const normalizeImportHeader = (value: unknown) => String(value ?? "").trim().toLowerCase().replace(/[\s_-]+/g, "");
+
+  const downloadImportTemplate = () => {
+    const template = "sku,quantity\nSKU-001,2\nSKU-002,1\n";
+    const url = URL.createObjectURL(new Blob([template], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "template-faktur.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const clearImportedFile = () => {
+    setImportFileName("");
+    setImportIssues([]);
+  };
+
+  const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    const extension = file.name.split(".").pop()?.toLowerCase();
+    if (!extension || !["csv", "xlsx", "xls"].includes(extension)) {
+      toast({ title: "Format file tidak didukung", description: "Unggah file CSV, XLSX, atau XLS.", variant: "destructive" });
+      return;
+    }
+
+    try {
+      setIsImporting(true);
+      const workbook = XLSX.read(await file.arrayBuffer(), { type: "array" });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      if (!sheet) throw new Error("EMPTY_FILE");
+      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
+      if (rows.length === 0) throw new Error("EMPTY_FILE");
+
+      const issues: ImportIssue[] = [];
+      const importedItems = new Map<string, number>();
+      const productsBySku = new Map(allProducts.filter((product) => product.sku).map((product) => [product.sku.trim().toLowerCase(), product]));
+      const productsByName = new Map(allProducts.map((product) => [product.name.trim().toLowerCase(), product]));
+
+      rows.forEach((row, index) => {
+        const fields = Object.entries(row).reduce<Record<string, unknown>>((result, [key, value]) => {
+          result[normalizeImportHeader(key)] = value;
+          return result;
+        }, {});
+        const identifier = String(fields.sku ?? fields.productsku ?? fields.product ?? fields.productname ?? fields.name ?? "").trim();
+        const quantity = Number(fields.quantity ?? fields.qty ?? "");
+        const rowNumber = index + 2;
+
+        if (!identifier) {
+          issues.push({ row: rowNumber, message: "SKU atau nama produk kosong." });
+        } else if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isInteger(quantity)) {
+          issues.push({ row: rowNumber, message: "Quantity harus berupa bilangan bulat lebih dari 0." });
+        } else {
+          const product = productsBySku.get(identifier.toLowerCase()) || productsByName.get(identifier.toLowerCase());
+          if (!product) issues.push({ row: rowNumber, message: `Produk \"${identifier}\" tidak ditemukan.` });
+          else importedItems.set(product.id, (importedItems.get(product.id) || 0) + quantity);
+        }
+      });
+
+      if (importedItems.size) {
+        setItems((currentItems) => {
+          const mergedItems = new Map(currentItems.map((item) => [item.productId, item.quantity]));
+          importedItems.forEach((quantity, productId) => mergedItems.set(productId, (mergedItems.get(productId) || 0) + quantity));
+          return Array.from(mergedItems, ([productId, quantity]) => ({ productId, quantity }));
+        });
+      }
+
+      setImportFileName(file.name);
+      setImportIssues(issues);
+      if (importedItems.size) {
+        toast({ title: "Produk berhasil diimpor", description: `${importedItems.size} produk ditambahkan dari ${file.name}.${issues.length ? ` ${issues.length} baris perlu diperiksa.` : ""}` });
+      } else {
+        toast({ title: "Tidak ada produk yang diimpor", description: "Periksa kolom SKU/nama produk dan quantity pada file.", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "Gagal membaca file", description: error instanceof Error && error.message === "EMPTY_FILE" ? "File tidak memiliki baris data." : "Pastikan file CSV atau Excel tidak rusak dan memiliki header.", variant: "destructive" });
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   const filteredProducts = useMemo(() => {
@@ -343,6 +435,50 @@ export default function InvoicesPage() {
                 </select>
               </div>
             )}
+            <div className="space-y-3 rounded-lg border border-dashed p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="flex gap-3">
+                  <div className="rounded-md bg-muted p-2">
+                    <FileSpreadsheet className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <Label htmlFor="invoice-import" className="text-base">Impor item faktur</Label>
+                    <p className="text-sm text-muted-foreground">Unggah CSV untuk file kecil atau Excel (.xlsx/.xls). Produk dicocokkan berdasarkan SKU terlebih dahulu, lalu nama produk.</p>
+                  </div>
+                </div>
+                <Button type="button" variant="link" className="h-auto p-0" onClick={downloadImportTemplate}>
+                  Unduh template CSV
+                </Button>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Input
+                  id="invoice-import"
+                  type="file"
+                  accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                  className="max-w-md cursor-pointer"
+                  onChange={handleImportFile}
+                  disabled={isImporting || !allProducts.length}
+                />
+                {isImporting && <span className="text-sm text-muted-foreground">Membaca file…</span>}
+                {importFileName && !isImporting && (
+                  <Button type="button" variant="ghost" size="sm" onClick={clearImportedFile}>
+                    <X className="mr-1 h-4 w-4" /> Hapus status file
+                  </Button>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">Kolom wajib: <span className="font-medium">sku</span> (atau <span className="font-medium">product/name</span>) dan <span className="font-medium">quantity</span> (atau <span className="font-medium">qty</span>). Baris produk yang sama akan digabungkan.</p>
+              {importFileName && <p className="text-sm font-medium">File terakhir: {importFileName}</p>}
+              {importIssues.length > 0 && (
+                <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+                  <p className="font-medium">{importIssues.length} baris tidak diimpor</p>
+                  <ul className="mt-1 list-disc space-y-1 pl-5">
+                    {importIssues.slice(0, 5).map((issue) => <li key={`${issue.row}-${issue.message}`}>Baris {issue.row}: {issue.message}</li>)}
+                    {importIssues.length > 5 && <li>Dan {importIssues.length - 5} baris lainnya.</li>}
+                  </ul>
+                </div>
+              )}
+              {!allProducts.length && <p className="text-sm text-muted-foreground">Tunggu produk dimuat sebelum mengimpor file.</p>}
+            </div>
             <div className="space-y-3">
               <Label>Add Product</Label>
               <Dialog open={isProductSelectorOpen} onOpenChange={setIsProductSelectorOpen}>
