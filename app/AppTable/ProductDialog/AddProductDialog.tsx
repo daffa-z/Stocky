@@ -76,7 +76,7 @@ export default function AddProductDialog({
     },
   });
 
-  const { reset } = methods;
+  const { reset, getValues, setValue } = methods;
 
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedSupplier, setSelectedSupplier] = useState<string>("");
@@ -130,6 +130,14 @@ export default function AddProductDialog({
     if (quantity > 20) return "Tersedia";
     if (quantity > 0 && quantity <= 20) return "Stok Menipis";
     return "Stok Habis";
+  };
+
+  const handleRestock = () => {
+    const currentQuantity = Number(getValues("quantity")) || 0;
+    setValue("quantity", currentQuantity + 5000, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
   };
 
   const onSubmit = async (data: ProductFormData) => {
@@ -250,7 +258,7 @@ export default function AddProductDialog({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <ProductName />
               <SKU allProducts={allProducts} />
-              <Quantity />
+              <Quantity onRestock={handleRestock} />
               <Unit />
               <Price
                 fieldName="buyPrice"

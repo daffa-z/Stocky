@@ -1,9 +1,14 @@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { MdError } from "react-icons/md";
 import { useFormContext } from "react-hook-form";
 
-export default function Quantity() {
+interface QuantityProps {
+  onRestock: () => void;
+}
+
+export default function Quantity({ onRestock }: QuantityProps) {
   const {
     register,
     formState: { errors },
@@ -20,6 +25,9 @@ export default function Quantity() {
         className="h-11 shadow-none"
         placeholder="34"
       />
+      <Button type="button" variant="secondary" onClick={onRestock}>
+        Restock +5.000
+      </Button>
       {errors.quantity && (
         <div className="text-red-500 flex gap-1 items-center text-[13px]">
           <MdError />
