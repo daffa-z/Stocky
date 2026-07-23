@@ -2,12 +2,8 @@
 
 import { useAuth } from "@/app/authContext";
 import AuthenticatedLayout from "@/app/components/AuthenticatedLayout";
-<<<<<<< HEAD
-import { Product } from "@/app/types";
-=======
 import axios from "axios";
 import { Category, Product } from "@/app/types";
->>>>>>> 7e59533 (please fixed)
 import { useProductStore } from "@/app/useProductStore";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -158,16 +154,18 @@ export default function InvoicesPage() {
     );
   };
 
-<<<<<<< HEAD
-  const normalizeImportHeader = (value: unknown) => String(value ?? "").trim().toLowerCase().replace(/[\s_-]+/g, "");
+  const normalizeImportHeader = (value: unknown) =>
+    String(value ?? "").replace(/^\uFEFF/, "").trim().toLowerCase().replace(/[\s_-]+/g, "");
 
-  const downloadImportTemplate = () => {
-    const template = "sku,quantity\nSKU-001,2\nSKU-002,1\n";
-=======
+  const getImportErrorMessage = (error: unknown, fallback: string) => {
+    if (axios.isAxiosError(error)) {
+      return error.response?.data?.error || error.response?.data?.message || fallback;
+    }
+    return error instanceof Error ? error.message : fallback;
+  };
 
   const downloadImportTemplate = () => {
     const template = "nama produk,sku,pemasok,qty,harga\nContoh Produk,SKU-001,Contoh Pemasok,2,15000\n";
->>>>>>> 7e59533 (please fixed)
     const url = URL.createObjectURL(new Blob([template], { type: "text/csv;charset=utf-8" }));
     const link = document.createElement("a");
     link.href = url;
@@ -181,22 +179,43 @@ export default function InvoicesPage() {
     setImportIssues([]);
   };
 
-<<<<<<< HEAD
-=======
+  const getOrCreateImportCategory = async (categories: Category[], importUserId: string) => {
+    const currentUserId = user?.id;
+    if (!currentUserId) throw new Error("Sesi pengguna tidak tersedia.");
 
->>>>>>> 7e59533 (please fixed)
+    const existingCategory = categories[0];
+    if (existingCategory) return existingCategory.id;
+
+    const response = await axiosInstance.post("/categories", { name: "Produk Impor", userId: currentUserId });
+    if (!response.data?.id) throw new Error("Kategori impor tidak dapat dibuat.");
+    return response.data.id as string;
+  };
+
+  const getOrCreateSupplier = async (supplierName: string, supplierByName: Map<string, string>, importUserId: string) => {
+    const currentUserId = user?.id;
+    if (!currentUserId) throw new Error("Sesi pengguna tidak tersedia.");
+
+    const normalizedName = supplierName.toLowerCase();
+    const existingSupplierId = supplierByName.get(normalizedName);
+    if (existingSupplierId) return existingSupplierId;
+
+    const response = await axiosInstance.post("/suppliers", { name: supplierName, userId: currentUserId });
+    if (!response.data?.id) throw new Error("Pemasok tidak dapat dibuat.");
+    const supplierId = response.data.id as string;
+    supplierByName.set(normalizedName, supplierId);
+    return supplierId;
+  };
+
   const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
-<<<<<<< HEAD
-=======
+    if (!user?.id) {
     const importUserId = user?.id;
     if (!importUserId) {
       toast({ title: "Sesi belum siap", description: "Tunggu sesi pengguna dimuat, lalu unggah file kembali.", variant: "destructive" });
       return;
     }
->>>>>>> 7e59533 (please fixed)
 
     const extension = file.name.split(".").pop()?.toLowerCase();
     if (!extension || !["csv", "xlsx", "xls"].includes(extension)) {
@@ -216,10 +235,8 @@ export default function InvoicesPage() {
       const importedItems = new Map<string, number>();
       const productsBySku = new Map(allProducts.filter((product) => product.sku).map((product) => [product.sku.trim().toLowerCase(), product]));
       const productsByName = new Map(allProducts.map((product) => [product.name.trim().toLowerCase(), product]));
-<<<<<<< HEAD
-
-      rows.forEach((row, index) => {
-=======
+      const supplierByName = new Map(suppliers.map((supplier) => [supplier.name.trim().toLowerCase(), supplier.id]));
+      let categoryId: string | undefined;
       const supplierByName = new Map<string, string>(
         suppliers.map((supplier) => [supplier.name.trim().toLowerCase(), supplier.id])
       );
@@ -227,27 +244,10 @@ export default function InvoicesPage() {
       let createdProductCount = 0;
 
       for (const [index, row] of rows.entries()) {
->>>>>>> 7e59533 (please fixed)
         const fields = Object.entries(row).reduce<Record<string, unknown>>((result, [key, value]) => {
           result[normalizeImportHeader(key)] = value;
           return result;
         }, {});
-<<<<<<< HEAD
-        const identifier = String(fields.sku ?? fields.productsku ?? fields.product ?? fields.productname ?? fields.name ?? "").trim();
-        const quantity = Number(fields.quantity ?? fields.qty ?? "");
-        const rowNumber = index + 2;
-
-        if (!identifier) {
-          issues.push({ row: rowNumber, message: "SKU atau nama produk kosong." });
-        } else if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isInteger(quantity)) {
-          issues.push({ row: rowNumber, message: "Quantity harus berupa bilangan bulat lebih dari 0." });
-        } else {
-          const product = productsBySku.get(identifier.toLowerCase()) || productsByName.get(identifier.toLowerCase());
-          if (!product) issues.push({ row: rowNumber, message: `Produk \"${identifier}\" tidak ditemukan.` });
-          else importedItems.set(product.id, (importedItems.get(product.id) || 0) + quantity);
-        }
-      });
-=======
         const name = String(fields.namaproduk ?? fields.namabarang ?? fields.productname ?? fields.product ?? fields.name ?? "").trim();
         const sku = String(fields.sku ?? "").trim();
         const supplierName = String(fields.pemasok ?? fields.supplier ?? "").trim();
@@ -306,7 +306,6 @@ export default function InvoicesPage() {
           issues.push({ row: rowNumber, message: getImportErrorMessage(error, `Produk "${name}" gagal dibuat.`) });
         }
       }
->>>>>>> 7e59533 (please fixed)
 
       if (importedItems.size) {
         setItems((currentItems) => {
@@ -314,23 +313,12 @@ export default function InvoicesPage() {
           importedItems.forEach((quantity, productId) => mergedItems.set(productId, (mergedItems.get(productId) || 0) + quantity));
           return Array.from(mergedItems, ([productId, quantity]) => ({ productId, quantity }));
         });
-<<<<<<< HEAD
-=======
         await Promise.all([loadProducts(), loadCategories(), loadSuppliers()]);
->>>>>>> 7e59533 (please fixed)
       }
 
       setImportFileName(file.name);
       setImportIssues(issues);
       if (importedItems.size) {
-<<<<<<< HEAD
-        toast({ title: "Produk berhasil diimpor", description: `${importedItems.size} produk ditambahkan dari ${file.name}.${issues.length ? ` ${issues.length} baris perlu diperiksa.` : ""}` });
-      } else {
-        toast({ title: "Tidak ada produk yang diimpor", description: "Periksa kolom SKU/nama produk dan quantity pada file.", variant: "destructive" });
-      }
-    } catch (error) {
-      toast({ title: "Gagal membaca file", description: error instanceof Error && error.message === "EMPTY_FILE" ? "File tidak memiliki baris data." : "Pastikan file CSV atau Excel tidak rusak dan memiliki header.", variant: "destructive" });
-=======
         toast({ title: "Produk berhasil diimpor", description: `${importedItems.size} produk ditambahkan ke faktur dari ${file.name}.${createdProductCount ? ` ${createdProductCount} produk baru dibuat.` : ""}${issues.length ? ` ${issues.length} baris perlu diperiksa.` : ""}` });
       } else {
         toast({ title: "Tidak ada produk yang diimpor", description: "Periksa kolom dan data pada file.", variant: "destructive" });
@@ -343,7 +331,6 @@ export default function InvoicesPage() {
           : getImportErrorMessage(error, "Pastikan file CSV atau Excel tidak rusak dan memiliki header."),
         variant: "destructive",
       });
->>>>>>> 7e59533 (please fixed)
     } finally {
       setIsImporting(false);
     }
@@ -360,71 +347,10 @@ export default function InvoicesPage() {
     });
   }, [allProducts, productSearch]);
 
-    const response = await axiosInstance.post("/suppliers", { name: supplierName, userId: user?.id });
-    const supplierId = response.data.id as string;
-    supplierByName.set(normalizedName, supplierId);
-    return supplierId;
-  };
-
-      const supplierByName = new Map(suppliers.map((supplier) => [supplier.name.trim().toLowerCase(), supplier.id]));
-      let categoryId: string | undefined;
-      let createdProductCount = 0;
-      for (const [index, row] of rows.entries()) {
-        const name = String(fields.namaproduk ?? fields.namabarang ?? fields.productname ?? fields.product ?? fields.name ?? "").trim();
-        const sku = String(fields.sku ?? "").trim();
-        const supplierName = String(fields.pemasok ?? fields.supplier ?? "").trim();
-        const quantity = Number(fields.qty ?? fields.quantity ?? "");
-        const price = Number(fields.harga ?? fields.price ?? "");
-        if (!name || !sku || !supplierName) {
-          issues.push({ row: rowNumber, message: "Nama produk, SKU, dan pemasok wajib diisi." });
-          continue;
-        if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isInteger(quantity)) {
-          issues.push({ row: rowNumber, message: "Qty harus berupa bilangan bulat lebih dari 0." });
-          continue;
-        }
-        if (!Number.isFinite(price) || price < 0) {
-          issues.push({ row: rowNumber, message: "Harga harus berupa angka 0 atau lebih." });
-          continue;
-        }
-
-        const product = productsBySku.get(sku.toLowerCase()) || productsByName.get(name.toLowerCase());
-        if (product) {
-          importedItems.set(product.id, (importedItems.get(product.id) || 0) + quantity);
-          continue;
-        }
-
-        try {
-          categoryId ??= await getOrCreateImportCategory();
-          const supplierId = await getOrCreateSupplier(supplierName, supplierByName);
-          const newProductPayload: Product = {
-            id: "",
-            createdAt: new Date(),
-            userId: user?.id || "",
-            name,
-            sku,
-            supplierId,
-            categoryId,
-            quantity,
-            price,
-            buyPrice: price,
-            sellPrice: price,
-            hetPrice: price,
-            unit: "pcs",
-            status: quantity > 20 ? "Tersedia" : "Stok Menipis",
-          };
-          const response = await axiosInstance.post("/products", newProductPayload);
-          const newProduct = response.data as Product;
-          productsBySku.set(sku.toLowerCase(), newProduct);
-          productsByName.set(name.toLowerCase(), newProduct);
-          importedItems.set(newProduct.id, (importedItems.get(newProduct.id) || 0) + quantity);
-          createdProductCount += 1;
-        } catch {
-          issues.push({ row: rowNumber, message: `Produk "${name}" gagal dibuat.` });
-        }
-      }
-        await Promise.all([loadProducts(), loadCategories(), loadSuppliers()]);
-        toast({ title: "Produk berhasil diimpor", description: `${importedItems.size} produk ditambahkan ke faktur dari ${file.name}.${createdProductCount ? ` ${createdProductCount} produk baru dibuat.` : ""}${issues.length ? ` ${issues.length} baris perlu diperiksa.` : ""}` });
-        toast({ title: "Tidak ada produk yang diimpor", description: "Periksa kolom dan data pada file.", variant: "destructive" });
+  const estimatedTotal = useMemo(() => {
+    return items.reduce((sum, item) => {
+      const product = allProducts.find((p) => p.id === item.productId);
+      if (!product) return sum;
       return sum + product.price * item.quantity;
     }, 0);
   }, [items, allProducts]);
@@ -651,11 +577,7 @@ export default function InvoicesPage() {
                   </div>
                   <div>
                     <Label htmlFor="invoice-import" className="text-base">Impor item faktur</Label>
-<<<<<<< HEAD
-                    <p className="text-sm text-muted-foreground">Unggah CSV untuk file kecil atau Excel (.xlsx/.xls). Produk dicocokkan berdasarkan SKU terlebih dahulu, lalu nama produk.</p>
-=======
                     <p className="text-sm text-muted-foreground">Unggah CSV untuk file kecil atau Excel (.xlsx/.xls). Produk yang belum ada akan dibuat otomatis.</p>
->>>>>>> 7e59533 (please fixed)
                   </div>
                 </div>
                 <Button type="button" variant="link" className="h-auto p-0" onClick={downloadImportTemplate}>
@@ -669,11 +591,7 @@ export default function InvoicesPage() {
                   accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
                   className="max-w-md cursor-pointer"
                   onChange={handleImportFile}
-<<<<<<< HEAD
-                  disabled={isImporting || !allProducts.length}
-=======
                   disabled={isImporting}
->>>>>>> 7e59533 (please fixed)
                 />
                 {isImporting && <span className="text-sm text-muted-foreground">Membaca file…</span>}
                 {importFileName && !isImporting && (
@@ -682,11 +600,7 @@ export default function InvoicesPage() {
                   </Button>
                 )}
               </div>
-<<<<<<< HEAD
-              <p className="text-xs text-muted-foreground">Kolom wajib: <span className="font-medium">sku</span> (atau <span className="font-medium">product/name</span>) dan <span className="font-medium">quantity</span> (atau <span className="font-medium">qty</span>). Baris produk yang sama akan digabungkan.</p>
-=======
               <p className="text-xs text-muted-foreground">Kolom wajib: <span className="font-medium">nama produk</span>, <span className="font-medium">sku</span>, <span className="font-medium">pemasok</span>, <span className="font-medium">qty</span>, dan <span className="font-medium">harga</span>. Harga produk baru dipakai sebagai harga beli, harga jual, dan HET.</p>
->>>>>>> 7e59533 (please fixed)
               {importFileName && <p className="text-sm font-medium">File terakhir: {importFileName}</p>}
               {importIssues.length > 0 && (
                 <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
@@ -697,10 +611,6 @@ export default function InvoicesPage() {
                   </ul>
                 </div>
               )}
-<<<<<<< HEAD
-              {!allProducts.length && <p className="text-sm text-muted-foreground">Tunggu produk dimuat sebelum mengimpor file.</p>}
-=======
->>>>>>> 7e59533 (please fixed)
             </div>
             <div className="space-y-3">
               <Label>Add Product</Label>
@@ -777,9 +687,10 @@ export default function InvoicesPage() {
                 <p className="text-sm text-muted-foreground">No items selected yet. Open Product Selector to add items.</p>
               ) : (
                 <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">Unggah CSV untuk file kecil atau Excel (.xlsx/.xls). Produk yang belum ada akan dibuat otomatis.</p>
-                  disabled={isImporting}
-              <p className="text-xs text-muted-foreground">Kolom wajib: <span className="font-medium">nama produk</span>, <span className="font-medium">sku</span>, <span className="font-medium">pemasok</span>, <span className="font-medium">qty</span>, dan <span className="font-medium">harga</span>. Harga produk baru dipakai sebagai harga beli, harga jual, dan HET.</p>
+                  {items.map((item) => {
+                    const selectedProduct = allProducts.find((product) => product.id === item.productId);
+                    if (!selectedProduct) return null;
+
                     return (
                       <div key={item.productId} className="grid grid-cols-12 gap-2 items-end rounded-md border p-2">
                         <div className="col-span-7">
@@ -1043,4 +954,5 @@ export default function InvoicesPage() {
       </div>
     </AuthenticatedLayout>
   );
+}
 }
